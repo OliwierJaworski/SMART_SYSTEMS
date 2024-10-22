@@ -1,0 +1,15 @@
+https://docs.nvidia.com/metropolis/deepstream/dev-guide/text/DS_C_Sample_Apps.html
+https://catalog.ngc.nvidia.com/orgs/nvidia/collections/deepstream_sdk
+https://docs.nvidia.com/metropolis/deepstream/dev-guide/text/DS_docker_containers.html
+https://catalog.ngc.nvidia.com/orgs/nvidia/containers/deepstream
+
+
+sudo docker run --runtime nvidia -it --rm --network host \
+    -v /tmp/.X11-unix/:/tmp/.X11-unix \
+    -v /tmp/argus_socket:/tmp/argus_socket \
+    -v ~/my_apps:/dli/task/my_apps \
+    --device /dev/video0 \
+    nvcr.io/nvidia/dli/dli-nano-deepstream:v2.0.0-DS6.0.1
+
+deepstream:7.1-samples-multiarch
+nvcr.io/nvidia/deepstream:7.1-samples-multiarch
