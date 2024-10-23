@@ -1,0 +1,10 @@
+^C:\USERS\OLIWIER\DESKTOP\PROJECTS\SMART_SYSTEMS\SMART_SYSTEMS_GIT_\ASSIGNMENTS\ASSIGNMENT_1_\DEV_\APP_\OUT\BUILD\GCC 12.2.0 X86_64-W64-MINGW32 (UCRT64)\CMAKEFILES\167BF691E2AFBED7C176EB5DB3AE0C08\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/Oliwier/Desktop/Projects/Smart_Systems/SMART_SYSTEMS_GIT_/Assignments/Assignment_1_/DEV_/APP_ "-BC:/Users/Oliwier/Desktop/Projects/Smart_Systems/SMART_SYSTEMS_GIT_/Assignments/Assignment_1_/DEV_/APP_/out/build/GCC 12.2.0 x86_64-w64-mingw32 (ucrt64)" --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file "C:/Users/Oliwier/Desktop/Projects/Smart_Systems/SMART_SYSTEMS_GIT_/Assignments/Assignment_1_/DEV_/APP_/out/build/GCC 12.2.0 x86_64-w64-mingw32 (ucrt64)/RTSP_Stream.sln"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

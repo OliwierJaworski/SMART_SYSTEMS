@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <ProjectOutputs>
+    <ProjectOutput>
+      <FullPath>C:\Users\Oliwier\Desktop\Projects\Smart_Systems\SMART_SYSTEMS_GIT_\Assignments\Assignment_1_\DEV_\APP_\out\build\GCC 12.2.0 x86_64-w64-mingw32 (ucrt64)\x64\Debug\ZERO_CHECK</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>C:\Users\Oliwier\Desktop\Projects\Smart_Systems\SMART_SYSTEMS_GIT_\Assignments\Assignment_1_\DEV_\APP_\out\build\GCC 12.2.0 x86_64-w64-mingw32 (ucrt64)\Debug\RTSP_Stream.exe</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>C:\Users\Oliwier\Desktop\Projects\Smart_Systems\SMART_SYSTEMS_GIT_\Assignments\Assignment_1_\DEV_\APP_\out\build\GCC 12.2.0 x86_64-w64-mingw32 (ucrt64)\x64\Debug\ALL_BUILD</FullPath>
+    </ProjectOutput>
+  </ProjectOutputs>
+  <ContentFiles />
+  <SatelliteDlls />
+  <NonRecipeFileRefs />
+</Project>
