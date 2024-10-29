@@ -1,0 +1,1 @@
+/usr/bin/c++ -g CMakeFiles/Gstrea.dir/main.cpp.o -o Gstrea

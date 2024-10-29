@@ -1,0 +1,1 @@
+/usr/bin/c++ -g CMakeFiles/Gstream.dir/main.cpp.o -o Gstream  -lgstreamer-1.0 -lgobject-2.0 -lglib-2.0 -lglib-2.0 -lgstapp-1.0 -lgstbase-1.0 -lgstreamer-1.0 -lgobject-2.0 -lglib-2.0 -lgstvideo-1.0 -lgstbase-1.0 -lgstreamer-1.0 -lgobject-2.0 -lglib-2.0 -lgstapp-1.0 -lgstvideo-1.0
