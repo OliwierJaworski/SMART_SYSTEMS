@@ -1,53 +1,64 @@
 #include <iostream>
+#include <cstdlib>  // For setenv
 #include "gstreamer-1.0/gst/gst.h"
 #include "glib-2.0/glib.h"
 
+int main(int argc, char *argv[]) {
+    std::cout << "**The beginning**\n";
 
-int
-tutorial_main (int argc, char *argv[])
-{
-  GstElement *pipeline;
-  GstBus *bus;
-  GstMessage *msg;
+    /* Set GST_DEBUG environment variable for this process */
+    setenv("GST_DEBUG", "3", 1);
 
-  /* Initialize GStreamer */
-  gst_init (&argc, &argv);
+    /* GStreamer type init */
+    GstElement *pipeline;
+    GstBus *bus;
+    GstMessage *msg;
 
-  /* Build the pipeline */
-  pipeline =
-      gst_parse_launch
-      ("playbin uri=https://gstreamer.freedesktop.org/data/media/sintel_trailer-480p.webm",
-      NULL);
+    /* Initialize GStreamer */
+    gst_init(&argc, &argv);
 
-  /* Start playing */
-  gst_element_set_state (pipeline, GST_STATE_PLAYING);
+    /* Build the pipeline */
+    pipeline = gst_parse_launch(
+        "rtspsrc location=rtsp://192.168.0.145:8554/xx ! "
+        "decodebin ! "
+        "x264enc tune=zerolatency ! "
+        "mp4mux ! "
+        "filesink location=output.mp4", 
+        NULL);
 
-  /* Wait until error or EOS */
-  bus = gst_element_get_bus (pipeline);
-  msg =
-      gst_bus_timed_pop_filtered (bus, GST_CLOCK_TIME_NONE,
-      (GstMessageType)(GST_MESSAGE_ERROR | GST_MESSAGE_EOS));
+    /* Start the pipeline */
+    GstStateChangeReturn ret = gst_element_set_state(pipeline, GST_STATE_PLAYING);
+    if (ret == GST_STATE_CHANGE_FAILURE) {
+        std::cerr << "Unable to set the pipeline to the playing state." << std::endl;
+        return -1;
+    }
 
-  /* See next tutorial for proper error message handling/parsing */
-  if (GST_MESSAGE_TYPE (msg) == GST_MESSAGE_ERROR) {
-    g_printerr ("An error occurred! Re-run with the GST_DEBUG=*:WARN "
-        "environment variable set for more details.\n");
-  }
+    /* Create a GMainLoop */
+    GMainLoop *loop = g_main_loop_new(NULL, FALSE);
 
-  /* Free resources */
-  gst_message_unref (msg);
-  gst_object_unref (bus);
-  gst_element_set_state (pipeline, GST_STATE_NULL);
-  gst_object_unref (pipeline);
-  return 0;
-}
+    /* Add a timeout to quit the loop after 10 seconds */
+    g_timeout_add_seconds(10, (GSourceFunc) g_main_loop_quit, loop);
 
-int
-main (int argc, char *argv[])
-{
-#if defined(__APPLE__) && TARGET_OS_MAC && !TARGET_OS_IPHONE
-  return gst_macos_main ((GstMainFunc) tutorial_main, argc, argv, NULL);
-#else
-  return tutorial_main (argc, argv);
-#endif
+    /* Wait for error or EOS */
+    bus = gst_element_get_bus(pipeline);
+    msg = gst_bus_timed_pop_filtered(bus, GST_CLOCK_TIME_NONE, 
+        static_cast<GstMessageType>(GST_MESSAGE_ERROR | GST_MESSAGE_EOS));
+
+    /* Free resources */
+    if (msg != nullptr) {
+        gst_message_unref(msg);
+    }
+
+    /* Clean up */
+    gst_object_unref(bus);
+    gst_element_set_state(pipeline, GST_STATE_NULL);
+    gst_object_unref(pipeline);
+    
+    /* Run the main loop */
+    g_main_loop_run(loop);
+    
+    /* Free the main loop */
+    g_main_loop_unref(loop);
+
+    return 0;
 }
