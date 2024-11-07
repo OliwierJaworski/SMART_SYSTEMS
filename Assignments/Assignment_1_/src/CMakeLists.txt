@@ -8,7 +8,7 @@ pkg_check_modules(GST_APP REQUIRED gstreamer-app-1.0)
 pkg_check_modules(GST_VIDEO REQUIRED gstreamer-video-1.0)
 pkg_check_modules(GST_RTSP REQUIRED gstreamer-rtsp-server-1.0)  # Add RTSP server package
 
-add_executable(${PROJECT_NAME} main.cpp)
+add_executable(${PROJECT_NAME} main.c)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${GLIB_INCLUDE_DIRS}

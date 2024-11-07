@@ -1,8 +1,0 @@
-[
-{
-  "directory": "/home/oliwier-desktop/Projects/SMART_SYSTEMS/Assignments/Assignment_1_/DEV_/APP_/build",
-  "command": "/usr/bin/c++  -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -I/usr/include/gstreamer-1.0 -I/usr/include/orc-0.4 -g -o CMakeFiles/Gstream.dir/main.cpp.o -c /home/oliwier-desktop/Projects/SMART_SYSTEMS/Assignments/Assignment_1_/DEV_/APP_/main.cpp",
-  "file": "/home/oliwier-desktop/Projects/SMART_SYSTEMS/Assignments/Assignment_1_/DEV_/APP_/main.cpp",
-  "output": "CMakeFiles/Gstream.dir/main.cpp.o"
-}
-]

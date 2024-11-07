@@ -1,3 +1,0 @@
-/home/oliwier-desktop/Projects/SMART_SYSTEMS/Assignments/Assignment_1_/DEV_/APP_/out/build/GCC 11.4.0 x86_64-linux-gnu/CMakeFiles/Gstream.dir
-/home/oliwier-desktop/Projects/SMART_SYSTEMS/Assignments/Assignment_1_/DEV_/APP_/out/build/GCC 11.4.0 x86_64-linux-gnu/CMakeFiles/edit_cache.dir
-/home/oliwier-desktop/Projects/SMART_SYSTEMS/Assignments/Assignment_1_/DEV_/APP_/out/build/GCC 11.4.0 x86_64-linux-gnu/CMakeFiles/rebuild_cache.dir
