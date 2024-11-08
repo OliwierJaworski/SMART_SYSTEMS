@@ -1,0 +1,2 @@
+PyGObject==3.42.0
+GStreamer==1.18.5
