@@ -1,8 +1,3 @@
-### self added ###
-desktop.ini
-/Assignments/Assignment_1_/DEV_/APP_/build
-/Assignments/Assignment_1_/DEV_/APP_/CMakePresets.json
-/Assignments/Assignment_3_/AI_Venv
 # Created by https://www.toptal.com/developers/gitignore/api/python
 # Edit at https://www.toptal.com/developers/gitignore?templates=python
 
@@ -179,4 +174,3 @@ poetry.toml
 pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python
-
