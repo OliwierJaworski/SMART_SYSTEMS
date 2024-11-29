@@ -16,6 +16,8 @@ def main():
     results = model.val()
     # save model in the same directory as __main__.py
     model.save("fles_model.pt")
+    #export model to onnx format
+    model.export(format="onnx",opset=11)
     # test model on new data
     results = model("Data/test/green_tea_pov.jpeg")
     result = results[0]
