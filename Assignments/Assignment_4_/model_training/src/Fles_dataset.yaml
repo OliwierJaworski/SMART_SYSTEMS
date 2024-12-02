@@ -2,4 +2,4 @@ train: data/images/train  # Path to the training images
 val: data/images/test      # Path to the validation images
 
 nc: 4  # Number of classes (adjust based on your dataset)
-names: ['cola', 'sprite', 'milk', 'juice']  # Class names (adjust as needed)
+names: ['cola', 'sprite', 'melk', 'ice-teagreen']  # Class names (adjust as needed)
