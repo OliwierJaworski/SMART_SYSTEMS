@@ -1,29 +1,54 @@
 import os
 from ultralytics import YOLO
 
-image_folder = "Data/image"
-label_folder = "Data/obj_train_data" 
+test_image_dir = "results/before"
+test_image_name = "cola.jpg"
+result_image_dir = "results/after"
+
+pretrained = False
+pretrained_path = ""
+epochs = 20
+save_export = False
+mode_save_name = "trained.pt"
 
 def main():
-    print("Program execution started!\n")    
-    print(os.getcwd())
-    # loading Pretrained model & train it 
-    model = YOLO("yolo11n.pt")
-    results = model.train(data="Fles_dataset.yaml", epochs=100, imgsz=640)
-    # or use your own trained one
-    # model = YOLO(model="trained_models/trained_100_epochs.pt")
-    # see the scores of your model after evaluation   
-    results = model.val()
-    # save model in the same directory as __main__.py
-    model.save("fles_model.pt")
-    #export model to onnx format
-    model.export(format="onnx",opset=11)
-    # test model on new data
-    results = model("Data/test/green_tea_pov.jpeg")
+    if __debug__ : 
+        print("Program execution started!\n");   
+        print(os.getcwd())
+
+    model = model_load()
+    results = train_model(model)
+    save_export(model=model)
+    model_test(model=model, results= results)
+      
+
+#model load in options
+def model_load():
+    if not pretrained:
+        model = YOLO("yolo11n.pt")
+    else:
+        model = YOLO(model=pretrained_path)
+    return model
+
+#if train is enabled 
+def train_model(model):
+    if  not pretrained:
+        results = model.train(data="Fles_dataset.yaml", epochs=epochs, imgsz=640)
+        results = model.val()
+    return results
+
+#if export is enabled
+def save_export(model):
+    if save_export:
+        model.save(mode_save_name)
+        model.export(format="onnx",opset=11)
+
+#will test the model on image provided 
+def model_test(model, results):
+    model((test_image_dir+"/"+test_image_name))
     result = results[0]
-    # store the data
-    result.save("output/output_image5.jpg")
-    
-    
+    result.save((result_image_dir+"/"+test_image_name))
+
+
 if __name__ == "__main__":
     main()
