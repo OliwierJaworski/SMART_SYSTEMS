@@ -8,6 +8,7 @@ run -> sudo apt-get update
 otherways it might not find any tensorrt package
 if any error shows up try installing different version of cuda for example 12.2 was broken i installed 12.6 and i was able to install
 ## usefull links:
+
 ### installation
 - [medium installation tutorial](https://medium.com/@moshiur.faisal01/install-tensorrt-with-command-line-wrapper-trtexec-on-ununtu-20-04-lts-3e44f4f36a2b)
 - [nvidia installation tutorial](https://docs.nvidia.com/deeplearning/tensorrt/quick-start-guide/index.html)
@@ -24,6 +25,11 @@ if any error shows up try installing different version of cuda for example 12.2 
 - [NVIDIA/TensoRT github](https://github.com/NVIDIA/TensorRT/tree/c468d67760e066f4d85c3e7f2fa89aa221fac83f)
 - [nvidia developer blog](https://developer.nvidia.com/blog/speed-up-inference-tensorrt/)
 - [classification inference guide](https://github.com/NVIDIA-developer-blog/code-samples/tree/master/posts/TensorRT-introduction)
+- [updated inference guide](https://developer.nvidia.com/blog/speeding-up-deep-learning-inference-using-tensorrt-updated/)
+- [nvidia tensorrt documentation](https://docs.nvidia.com/deeplearning/tensorrt/sample-support-guide/index.html#onnx_mnist_sample)
+
+### maybe usefull oneday 
+- [cross compilation x86_64 for arm64](https://forums.developer.nvidia.com/t/how-to-across-compile-the-tensorrt-sample-code-in-x86-64-for-aarch64/180932/2)
 
 ## usefull will be placed somewhere else later
 - onnx to tensorrt engine : 'trtexec --onnx=resnet50/model.onnx --saveEngine=resnet_engine_intro.engine'
