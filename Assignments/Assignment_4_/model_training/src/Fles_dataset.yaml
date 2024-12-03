@@ -1,5 +1,5 @@
-train: fles_dataset/images/train  # Path to the training images
-val: fles_dataset/images/val      # Path to the validation images
+train: Soda_Dataset/images/train  # Path to the training images
+val: Soda_Dataset/images/val      # Path to the validation images
 
 nc: 4  # Number of classes (adjust based on your dataset)
-names: ['cola', 'sprite', 'melk', 'ice-teagreen']  # Class names (adjust as needed)
+names: ['cola-bottle', 'fanta-bottle', 'lipton-peach-bottle', 'sprite-bottle']  # Class names (adjust as needed)
