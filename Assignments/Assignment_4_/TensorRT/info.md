@@ -28,6 +28,16 @@ if any error shows up try installing different version of cuda for example 12.2 
 - [updated inference guide](https://developer.nvidia.com/blog/speeding-up-deep-learning-inference-using-tensorrt-updated/)
 - [nvidia tensorrt documentation](https://docs.nvidia.com/deeplearning/tensorrt/sample-support-guide/index.html#onnx_mnist_sample)
 
+- [youtube video tensorRT tutorial](https://www.youtube.com/watch?v=Z0n5aLmcRHQ)
+- [youtube video github page](https://github.com/cyrusbehr/tensorrt-cpp-api/blob/main/src/main.cpp)
+
+### first attempt 
+- [spdlog](https://github.com/gabime/spdlog?tab=readme-ov-file)
+- [fmt](https://github.com/fmtlib/fmt/releases/tag/11.0.2)
+
+- [alternative simple onnx->trt->inference in c++ <- weird example](https://github.com/ggluo/TensorRT-Cpp-Example)
+- [medium tutorial yolo10 onnx tensorRT object detection](https://medium.com/@boukamchahamdi/yolov10-c-tensorrt-project-27f66c163de1)
+
 ### maybe usefull oneday 
 - [cross compilation x86_64 for arm64](https://forums.developer.nvidia.com/t/how-to-across-compile-the-tensorrt-sample-code-in-x86-64-for-aarch64/180932/2)
 
