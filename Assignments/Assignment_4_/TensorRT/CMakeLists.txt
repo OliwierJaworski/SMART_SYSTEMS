@@ -8,10 +8,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 # Debug flags
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -DDEBUG")
 
-
+# Find packages
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GSTREAMER REQUIRED gstreamer-1.0)
 pkg_check_modules(GSTREAMER_APP REQUIRED gstreamer-app-1.0)
+
+# Find OpenCV
+find_package(OpenCV REQUIRED)
 
 # CUDA settings
 find_package(CUDA REQUIRED)
@@ -21,7 +24,6 @@ set(CUDA_TOOLKIT_ROOT_DIR /usr/local/cuda)
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 find_package(TensorRT REQUIRED)
 
-
 # Include directories
 include_directories(
     ${CUDA_INCLUDE_DIRS}
@@ -29,7 +31,7 @@ include_directories(
     ${GSTREAMER_INCLUDE_DIRS}
     ${GSTREAMER_APP_INCLUDE_DIRS}
     ${CMAKE_SOURCE_DIR}/src
-    
+    ${OpenCV_INCLUDE_DIRS}  # Include OpenCV headers
 )
 
 # Linker directories
@@ -45,6 +47,7 @@ set(LIBS
     ${CUDA_LIBRARIES}
     ${TensorRT_LIBRARIES}
     ${GStreamer_LIBRARIES}
+    ${OpenCV_LIBRARIES}  # Link OpenCV
     -lnvinfer 
     -lnvonnxparser 
     -lcudart 

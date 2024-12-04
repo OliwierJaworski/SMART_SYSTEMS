@@ -149,15 +149,23 @@ void MODEL_TRT::inferImage(const std::string& imagePath, const std::string& engi
     // GStreamer pipeline to read image
     std::string gstPipeline = "filesrc location=" + imagePath + " ! decodebin ! videoconvert ! appsink";
     GstElement* pipeline = gst_parse_launch(gstPipeline.c_str(), nullptr);
+    if (!pipeline) {
+        std::cerr << "Error: Failed to parse GStreamer pipeline." << std::endl;
+        return;
+    }
+
     GstElement* appsink = gst_bin_get_by_name(GST_BIN(pipeline), "appsink0");
+    if (!appsink) {
+        std::cerr << "Error: Failed to get appsink element." << std::endl;
+        gst_element_set_state(pipeline, GST_STATE_NULL);
+        gst_object_unref(pipeline);
+        return;
+    }
 
     // Start the pipeline
     gst_element_set_state(pipeline, GST_STATE_PLAYING);
 
-    GstSample* sample = nullptr;
-
-    // We process the first frame in the pipeline
-    sample = gst_app_sink_pull_sample(GST_APP_SINK(appsink));
+    GstSample* sample = gst_app_sink_pull_sample(GST_APP_SINK(appsink));
     if (!sample) {
         std::cerr << "Error: Failed to get sample from GStreamer pipeline." << std::endl;
         gst_element_set_state(pipeline, GST_STATE_NULL);
@@ -167,35 +175,67 @@ void MODEL_TRT::inferImage(const std::string& imagePath, const std::string& engi
 
     // Get the buffer from the sample
     GstBuffer* buffer = gst_sample_get_buffer(sample);
+    if (!buffer) {
+        std::cerr << "Error: Failed to get buffer from sample." << std::endl;
+        gst_sample_unref(sample);
+        gst_element_set_state(pipeline, GST_STATE_NULL);
+        gst_object_unref(pipeline);
+        return;
+    }
+
     GstMapInfo mapInfo;
-    gst_buffer_map(buffer, &mapInfo, GST_MAP_READ);
+    if (!gst_buffer_map(buffer, &mapInfo, GST_MAP_READ)) {
+        std::cerr << "Error: Failed to map buffer." << std::endl;
+        gst_sample_unref(sample);
+        gst_element_set_state(pipeline, GST_STATE_NULL);
+        gst_object_unref(pipeline);
+        return;
+    }
 
-    const int inputWidth = 640;  // Example width
-    const int inputHeight = 640; // Example height
+    const int inputWidth = 640;  // Expected width
+    const int inputHeight = 640; // Expected height
     const int channels = 3;      // RGB channels
-    // Prepare the input data (resize, normalize, etc.)
-    uint8_t* imageData = mapInfo.data;
-    size_t imageSize = mapInfo.size;
 
-    // Allocate and prepare input data for TensorRT (e.g., resize, normalize, etc.)
+    // Convert raw buffer data into OpenCV Mat
+    cv::Mat image(cv::Size(inputWidth, inputHeight), CV_8UC3, mapInfo.data);
+    if (image.empty()) {
+        std::cerr << "Error: Failed to create OpenCV Mat from buffer." << std::endl;
+        gst_buffer_unmap(buffer, &mapInfo);
+        gst_sample_unref(sample);
+        gst_element_set_state(pipeline, GST_STATE_NULL);
+        gst_object_unref(pipeline);
+        return;
+    }
+
+    // Resize and normalize the image
+    cv::Mat resizedImage;
+    cv::resize(image, resizedImage, cv::Size(inputWidth, inputHeight));
+    resizedImage.convertTo(resizedImage, CV_32F, 1.0 / 255.0);
+
+    std::cout << "Image size after resize: " << resizedImage.size() << std::endl;
+
+    // Flatten the image into a vector for TensorRT
     std::vector<float> inputData(inputWidth * inputHeight * channels);
-    // Resize and normalize code here
+    std::memcpy(inputData.data(), resizedImage.data, inputData.size() * sizeof(float));
 
     // Prepare memory for input and output buffers
     void* buffers[2];
     buffers[0] = inputData.data();  // Input buffer
 
-    // Create output buffer (adjust size based on your model's output)
-    int outputSize = 1000; // Example output size for classification model (change based on your model's output)
+    int outputSize = 1000;  // Example output size for classification model (change accordingly)
     std::vector<float> outputData(outputSize);
     buffers[1] = outputData.data();  // Output buffer
 
     // Run inference
-    if (context->executeV2(buffers)) {
-        std::cout << "Inference successful!" << std::endl;
-        // Process the output (e.g., visualize results, extract bounding boxes, etc.)
-    } else {
-        std::cerr << "Error: Failed to execute inference!" << std::endl;
+    try {
+        if (context->executeV2(buffers)) {
+            std::cout << "Inference successful!" << std::endl;
+            // Process the output (e.g., visualize results, extract bounding boxes, etc.)
+        } else {
+            std::cerr << "Error: Failed to execute inference!" << std::endl;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Exception during inference: " << e.what() << std::endl;
     }
 
     // Cleanup
@@ -204,6 +244,7 @@ void MODEL_TRT::inferImage(const std::string& imagePath, const std::string& engi
     gst_element_set_state(pipeline, GST_STATE_NULL);
     gst_object_unref(pipeline);
 }
+
 
 
 

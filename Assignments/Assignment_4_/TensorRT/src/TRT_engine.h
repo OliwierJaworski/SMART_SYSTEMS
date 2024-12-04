@@ -10,6 +10,7 @@
 #include <vector>
 #include <gstreamer-1.0/gst/gst.h>
 #include <gst/app/gstappsink.h>
+#include <opencv4/opencv2/opencv.hpp>  // Main OpenCV header
 
 
 /**
