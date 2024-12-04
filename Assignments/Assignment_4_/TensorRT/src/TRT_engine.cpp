@@ -4,6 +4,8 @@ MODEL_TRT::MODEL_TRT() {}
 
 MODEL_TRT::~MODEL_TRT() {}
 
+
+
 void MODEL_TRT::convertOnnxToEngine(const std::string& onnxFile, int memorySize) {
    // Check if the ONNX file exists
     std::ifstream ifile(onnxFile);
@@ -80,6 +82,131 @@ void MODEL_TRT::convertOnnxToEngine(const std::string& onnxFile, int memorySize)
     // Print a success message
     std::cout << "Converted ONNX model to TensorRT engine model successfully!" << std::endl;
 }
+
+std::shared_ptr<nvinfer1::IExecutionContext> MODEL_TRT::createExecutionContext(const std::string& modelPath) {
+      // Open the model file in binary mode
+    std::ifstream filePtr(modelPath, std::ios::binary);
+    
+    // Check if the file was opened successfully
+    if (!filePtr.good()) {
+        std::cerr << "File cannot be opened, please check the file!" << std::endl;
+        return nullptr;  // Return nullptr if the file cannot be opened
+    }
+
+    // Determine the size of the file
+    size_t size = 0;
+    filePtr.seekg(0, filePtr.end);  // Move to the end of the file
+    size = filePtr.tellg();         // Get the current position, which is the size of the file
+    filePtr.seekg(0, filePtr.beg);  // Move back to the beginning of the file
+
+    // Allocate memory to hold the file contents
+    char* modelStream = new char[size];
+    filePtr.read(modelStream, size);  // Read the entire file into the allocated memory
+    filePtr.close();  // Close the file after reading
+
+    // Create an instance of nvinfer1::IRuntime
+    nvinfer1::IRuntime* runtime = nvinfer1::createInferRuntime(logger);
+    if (!runtime) {
+        std::cerr << "Failed to create runtime" << std::endl;
+        delete[] modelStream;  // Free the allocated memory
+        return nullptr;  // Return nullptr if the runtime creation fails
+    }
+
+    // Deserialize the model and create an ICudaEngine
+    nvinfer1::ICudaEngine* engine = runtime->deserializeCudaEngine(modelStream, size);
+    delete[] modelStream;  // Free the allocated memory
+    if (!engine) {
+        std::cerr << "Failed to create engine" << std::endl;
+        delete runtime; // Clean up runtime
+        return nullptr;  // Return nullptr if the engine creation fails
+    }
+
+    // Create an execution context from the engine
+    nvinfer1::IExecutionContext* context = engine->createExecutionContext();
+    if (!context) {
+        std::cerr << "Failed to create execution context" << std::endl;
+        delete engine;  // Clean up engine
+        return nullptr;  // Return nullptr if the execution context creation fails
+    }
+
+    // Return a shared pointer to the execution context with a custom deleter
+    return std::shared_ptr<nvinfer1::IExecutionContext>(context, [](nvinfer1::IExecutionContext* ctx) {
+        delete ctx;  // Clean up the execution context
+    });
+}
+
+void MODEL_TRT::inferImage(const std::string& imagePath, const std::string& enginePath) {
+    // Initialize GStreamer
+    gst_init(nullptr, nullptr);
+
+    // Load the TensorRT engine
+    auto context = createExecutionContext(enginePath);
+    if (!context) {
+        std::cerr << "Error: Failed to create execution context!" << std::endl;
+        return;
+    }
+
+    // GStreamer pipeline to read image
+    std::string gstPipeline = "filesrc location=" + imagePath + " ! decodebin ! videoconvert ! appsink";
+    GstElement* pipeline = gst_parse_launch(gstPipeline.c_str(), nullptr);
+    GstElement* appsink = gst_bin_get_by_name(GST_BIN(pipeline), "appsink0");
+
+    // Start the pipeline
+    gst_element_set_state(pipeline, GST_STATE_PLAYING);
+
+    GstSample* sample = nullptr;
+
+    // We process the first frame in the pipeline
+    sample = gst_app_sink_pull_sample(GST_APP_SINK(appsink));
+    if (!sample) {
+        std::cerr << "Error: Failed to get sample from GStreamer pipeline." << std::endl;
+        gst_element_set_state(pipeline, GST_STATE_NULL);
+        gst_object_unref(pipeline);
+        return;
+    }
+
+    // Get the buffer from the sample
+    GstBuffer* buffer = gst_sample_get_buffer(sample);
+    GstMapInfo mapInfo;
+    gst_buffer_map(buffer, &mapInfo, GST_MAP_READ);
+
+    const int inputWidth = 640;  // Example width
+    const int inputHeight = 640; // Example height
+    const int channels = 3;      // RGB channels
+    // Prepare the input data (resize, normalize, etc.)
+    uint8_t* imageData = mapInfo.data;
+    size_t imageSize = mapInfo.size;
+
+    // Allocate and prepare input data for TensorRT (e.g., resize, normalize, etc.)
+    std::vector<float> inputData(inputWidth * inputHeight * channels);
+    // Resize and normalize code here
+
+    // Prepare memory for input and output buffers
+    void* buffers[2];
+    buffers[0] = inputData.data();  // Input buffer
+
+    // Create output buffer (adjust size based on your model's output)
+    int outputSize = 1000; // Example output size for classification model (change based on your model's output)
+    std::vector<float> outputData(outputSize);
+    buffers[1] = outputData.data();  // Output buffer
+
+    // Run inference
+    if (context->executeV2(buffers)) {
+        std::cout << "Inference successful!" << std::endl;
+        // Process the output (e.g., visualize results, extract bounding boxes, etc.)
+    } else {
+        std::cerr << "Error: Failed to execute inference!" << std::endl;
+    }
+
+    // Cleanup
+    gst_buffer_unmap(buffer, &mapInfo);
+    gst_sample_unref(sample);
+    gst_element_set_state(pipeline, GST_STATE_NULL);
+    gst_object_unref(pipeline);
+}
+
+
+
 
 /*
 void YOLOv10::preProcess(cv::Mat* img, int length, float* factor, std::vector<float>& data) {
@@ -204,57 +331,7 @@ for (size_t j = 0; j < res.size(); j++) {
 */
 
 /*
-std::shared_ptr<nvinfer1::IExecutionContext> YOLOv10::createExecutionContext(const std::string& modelPath) {
-      // Open the model file in binary mode
-    std::ifstream filePtr(modelPath, std::ios::binary);
-    
-    // Check if the file was opened successfully
-    if (!filePtr.good()) {
-        std::cerr << "File cannot be opened, please check the file!" << std::endl;
-        return nullptr;  // Return nullptr if the file cannot be opened
-    }
 
-    // Determine the size of the file
-    size_t size = 0;
-    filePtr.seekg(0, filePtr.end);  // Move to the end of the file
-    size = filePtr.tellg();         // Get the current position, which is the size of the file
-    filePtr.seekg(0, filePtr.beg);  // Move back to the beginning of the file
-
-    // Allocate memory to hold the file contents
-    char* modelStream = new char[size];
-    filePtr.read(modelStream, size);  // Read the entire file into the allocated memory
-    filePtr.close();  // Close the file after reading
-
-    // Create an instance of nvinfer1::IRuntime
-    nvinfer1::IRuntime* runtime = nvinfer1::createInferRuntime(logger);
-    if (!runtime) {
-        std::cerr << "Failed to create runtime" << std::endl;
-        delete[] modelStream;  // Free the allocated memory
-        return nullptr;  // Return nullptr if the runtime creation fails
-    }
-
-    // Deserialize the model and create an ICudaEngine
-    nvinfer1::ICudaEngine* engine = runtime->deserializeCudaEngine(modelStream, size);
-    delete[] modelStream;  // Free the allocated memory
-    if (!engine) {
-        std::cerr << "Failed to create engine" << std::endl;
-        runtime->destroy();  // Clean up runtime
-        return nullptr;  // Return nullptr if the engine creation fails
-    }
-
-    // Create an execution context from the engine
-    nvinfer1::IExecutionContext* context = engine->createExecutionContext();
-    if (!context) {
-        std::cerr << "Failed to create execution context" << std::endl;
-        engine->destroy();  // Clean up engine
-        return nullptr;  // Return nullptr if the execution context creation fails
-    }
-
-    // Return a shared pointer to the execution context with a custom deleter
-    return std::shared_ptr<nvinfer1::IExecutionContext>(context, [](nvinfer1::IExecutionContext* ctx) {
-        ctx->destroy();  // Clean up the execution context
-    });
-}
 */
 
 /*
@@ -339,68 +416,5 @@ cudaStreamDestroy(stream);
 */
 
 /*
-void YOLOv10::inferImage(const std::string& imagePath, const std::string& enginePath) {
-    // Create an execution context from the TensorRT engine file
-    std::shared_ptr<nvinfer1::IExecutionContext> context = createExecutionContext(enginePath);
 
-    // Load the image from the specified path using OpenCV
-    cv::Mat img = cv::imread(imagePath);
-
-    // Check if the image was loaded successfully
-    if (img.empty()) {
-        std::cerr << "ERROR: Could not open or find the image." << std::endl;
-        return;
-    }
-
-    // Preprocess the image: resize, normalize, etc.
-    // `inputData` is the buffer where the preprocessed image data will be stored
-    float factor = 0; // Factor for scaling the image, if needed
-    std::vector<float> inputData(640 * 640 * 3); // Buffer for the input data
-    preProcess(&img, 640, &factor, inputData);
-
-    // Create a CUDA stream for asynchronous operations
-    cudaStream_t stream;
-    cudaStreamCreate(&stream);
-
-    // Allocate device memory for input and output data
-    void* inputSrcDevice;
-    void* outputSrcDevice;
-    cudaMalloc(&inputSrcDevice, 3 * 640 * 640 * sizeof(float)); // Input buffer
-    cudaMalloc(&outputSrcDevice, 1 * 300 * 6 * sizeof(float));  // Output buffer
-
-    // Copy the preprocessed input data from host to device
-    cudaMemcpyAsync(inputSrcDevice, inputData.data(), 3 * 640 * 640 * sizeof(float),
-                    cudaMemcpyHostToDevice, stream);
-
-    // Set up the input and output bindings for the TensorRT execution context
-    void* bindings[] = { inputSrcDevice, outputSrcDevice };
-    
-    // Execute the TensorRT inference
-    context->enqueueV2(bindings, stream, nullptr);
-
-    // Allocate buffer to store the output data
-    std::vector<float> output_data(300 * 6);
-    cudaMemcpyAsync(output_data.data(), outputSrcDevice, 300 * 6 * sizeof(float),
-                    cudaMemcpyDeviceToHost, stream);
-    
-    // Synchronize the stream to ensure all operations are complete
-    cudaStreamSynchronize(stream);
-
-    // Post-process the output data to extract detection results
-    std::vector<DetResult> result = postProcess(output_data.data(), factor, 300);
-    
-    // Draw bounding boxes on the image
-    drawBbox(img, result);
-
-    // Display the image with results using OpenCV
-    cv::imshow("RESULT", img);
-    cv::waitKey(0); // Wait indefinitely for a key press
-
-    // Free device memory
-    cudaFree(inputSrcDevice);
-    cudaFree(outputSrcDevice);
-
-    // Destroy the CUDA stream
-    cudaStreamDestroy(stream);
-}
 */

@@ -52,7 +52,7 @@ int main(int argc, char* argv[]) {
         //model_trt.inferVideo(inputPath, enginePath);  // Perform inference on video
         std::cout << "functionality will be added later";
     } else if (mode == "infer_image") {
-        //model_trt.inferImage(inputPath, enginePath);  // Perform inference on image
+        model_trt.inferImage(inputPath, enginePath);  // Perform inference on image
         std::cout << "functionality will be added later";
     }
 

@@ -8,6 +8,9 @@
 #include <iostream>
 #include <memory>
 #include <vector>
+#include <gstreamer-1.0/gst/gst.h>
+#include <gst/app/gstappsink.h>
+
 
 /**
  * @brief Logger class for TensorRT
@@ -23,7 +26,7 @@ public:
      * @param msg The message to log.
      */
     void log(Severity severity, const char* msg) noexcept override {
-        if (severity <= Severity::kWARNING)
+        if (severity <= Severity::kVERBOSE)
             std::cout << msg << std::endl;
     }
 };
@@ -46,8 +49,6 @@ public:
      */
     ~MODEL_TRT();
 
-    
-
     /**
      * @brief Converts an ONNX model to a TensorRT engine.
      * 
@@ -56,8 +57,26 @@ public:
      */
     void convertOnnxToEngine(const std::string& onnxFile, int memorySize);
 
+    /**
+     * @brief Creates an execution context from a model path.
+     * 
+     * @param modelPath Path to the model.
+     * @return std::shared_ptr<nvinfer1::IExecutionContext> Shared pointer to the execution context.
+     */
+    std::shared_ptr<nvinfer1::IExecutionContext> createExecutionContext(const std::string& modelPath);
+
+    /**
+     * @brief Performs inference on an image.
+     * 
+     * @param imagePath Path to the image file.
+     * @param enginePath Path to the TensorRT engine file.
+     */
+    void inferImage(const std::string& imagePath, const std::string& enginePath);
+    //void inferImage(const std::string& imagePath, const std::string& enginePath);
+    
 private:
     Logger logger; ///< Logger instance for TensorRT.
+
 };
 
 
@@ -117,15 +136,6 @@ private:
         void drawBbox(cv::Mat& img, std::vector<DetResult>& res);
 
         /**
-         * @brief Creates an execution context from a model path.
-         * 
-         * @param modelPath Path to the model.
-         * @return std::shared_ptr<nvinfer1::IExecutionContext> Shared pointer to the execution context.
-         */
-        /*
-        std::shared_ptr<nvinfer1::IExecutionContext> createExecutionContext(const std::string& modelPath);
-
-        /**
          * @brief Performs inference on a video stream.
          * 
          * @param videoPath Path to the video file.
@@ -134,13 +144,6 @@ private:
         /*
         void inferVideo(const std::string& videoPath, const std::string& enginePath);
         
-        /**
-        * @brief Performs inference on an image.
-        * 
-        * @param imagePath Path to the image file.
-        * @param enginePath Path to the TensorRT engine file.
-        */
-       /*
-        void inferImage(const std::string& imagePath, const std::string& enginePath);
+        
     };
 */
