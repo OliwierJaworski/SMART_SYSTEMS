@@ -20,7 +20,7 @@ if any error shows up try installing different version of cuda for example 12.2 
 - [can't find trtexec after installation](https://forums.developer.nvidia.com/t/bash-trtexec-command-not-found/127302/5)
 - [tensorrt api documentation](https://docs.nvidia.com/deeplearning/tensorrt/index.html)
 - [reinstall cuda thread](https://forums.developer.nvidia.com/t/tensorrt-installation-problem/265125/8)
-
+- [cudnn install](https://developer.nvidia.com/cudnn-downloads?target_os=Linux&target_arch=x86_64&Distribution=Ubuntu&target_version=22.04&target_type=deb_network)
 ### running inference
 - [NVIDIA/TensoRT github](https://github.com/NVIDIA/TensorRT/tree/c468d67760e066f4d85c3e7f2fa89aa221fac83f)
 - [nvidia developer blog](https://developer.nvidia.com/blog/speed-up-inference-tensorrt/)
@@ -43,3 +43,16 @@ if any error shows up try installing different version of cuda for example 12.2 
 
 ## usefull will be placed somewhere else later
 - onnx to tensorrt engine : 'trtexec --onnx=resnet50/model.onnx --saveEngine=resnet_engine_intro.engine'
+
+## jetson nano stuff
+
+### dependencies download
+-[jetson nano nvidia specifications](https://developer.nvidia.com/embedded/jetpack-sdk-461)
+- cuda version : -- cat /usr/local/cuda/version.txt -- -> 10.2
+- tensorRT version : -- dpkg -l | grep nvinfer -- -> 8.2
+- OS version : ubuntu -v1804
+
+### issues fixed:
+1. -  //usr/lib/aarch64-linux-gnu/tegra/libnvmedia.so: undefined reference to `TVMRLDCUpdateTNR2Params' -
+-> sudo apt-get install --reinstall nvidia-l4t-jetson-multimedia-api
+
