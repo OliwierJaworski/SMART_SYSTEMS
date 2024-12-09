@@ -1,44 +1,64 @@
 cmake_minimum_required(VERSION 3.5.0)
-project(TensorRT_Project VERSION 0.1.0 LANGUAGES C CXX)
-
-# Set C++ Standard
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
-
-# Debug flags
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -DDEBUG")
+project(TRT_OBJECT_DETECTION VERSION 0.1.0 LANGUAGES C CXX)
 
 # Find packages
 find_package(PkgConfig REQUIRED)
+find_package(OpenCV REQUIRED)
+find_package(CUDA REQUIRED)
+
+# TensorRT search paths
+set(TensorRT_SEARCH_PATHS
+    ${TensorRT_DIR}          # User-specified TensorRT directory
+    /usr                     # Common installation path
+    /usr/local               # Alternative installation path
+    /usr/lib/x86_64-linux-gnu
+    /usr/include/x86_64-linux-gnu
+)
+
+# Locate TensorRT include and libraries
+find_path(TensorRT_INCLUDE_DIR NvInfer.h PATHS ${TensorRT_SEARCH_PATHS} PATH_SUFFIXES include)
+find_library(TensorRT_LIBRARY nvinfer PATHS ${TensorRT_SEARCH_PATHS} PATH_SUFFIXES lib lib64)
+find_library(TensorRT_NVONNXPARSER_LIBRARY nvonnxparser PATHS ${TensorRT_SEARCH_PATHS} PATH_SUFFIXES lib lib64)
+find_library(TensorRT_NVPARSERS_LIBRARY nvparsers PATHS ${TensorRT_SEARCH_PATHS} PATH_SUFFIXES lib lib64)
+
+# Check TensorRT headers for versioning
+if(TensorRT_INCLUDE_DIR AND EXISTS "${TensorRT_INCLUDE_DIR}/NvInfer.h")
+    file(STRINGS "${TensorRT_INCLUDE_DIR}/NvInfer.h" TensorRT_MAJOR REGEX "^#define NV_TENSORRT_MAJOR [0-9]+.*$")
+    file(STRINGS "${TensorRT_INCLUDE_DIR}/NvInfer.h" TensorRT_MINOR REGEX "^#define NV_TENSORRT_MINOR [0-9]+.*$")
+    file(STRINGS "${TensorRT_INCLUDE_DIR}/NvInfer.h" TensorRT_PATCH REGEX "^#define NV_TENSORRT_PATCH [0-9]+.*$")
+
+    string(REGEX REPLACE "^#define NV_TENSORRT_MAJOR ([0-9]+).*$" "\\1" TensorRT_VERSION_MAJOR "${TensorRT_MAJOR}")
+    string(REGEX REPLACE "^#define NV_TENSORRT_MINOR ([0-9]+).*$" "\\1" TensorRT_VERSION_MINOR "${TensorRT_MINOR}")
+    string(REGEX REPLACE "^#define NV_TENSORRT_PATCH ([0-9]+).*$" "\\1" TensorRT_VERSION_PATCH "${TensorRT_PATCH}")
+    set(TensorRT_VERSION_STRING "${TensorRT_VERSION_MAJOR}.${TensorRT_VERSION_MINOR}.${TensorRT_VERSION_PATCH}")
+endif()
+
+# Handle errors if TensorRT is not found
+if(NOT TensorRT_INCLUDE_DIR OR NOT TensorRT_LIBRARY)
+    message(FATAL_ERROR "TensorRT not found! Please specify the TensorRT_DIR.")
+endif()
+
+# Include TensorRT library and include directory
+include_directories(${TensorRT_INCLUDE_DIR})
+set(TensorRT_LIBRARIES ${TensorRT_LIBRARY} ${TensorRT_NVONNXPARSER_LIBRARY} ${TensorRT_NVPARSERS_LIBRARY})
+
+# Find GStreamer
 pkg_check_modules(GSTREAMER REQUIRED gstreamer-1.0)
 pkg_check_modules(GSTREAMER_APP REQUIRED gstreamer-app-1.0)
-
-# Find OpenCV
-find_package(OpenCV REQUIRED)
-
-# CUDA settings
-find_package(CUDA REQUIRED)
-set(CUDA_TOOLKIT_ROOT_DIR /usr/local/cuda)
-
-# TensorRT settings
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
-find_package(TensorRT REQUIRED)
 
 # Include directories
 include_directories(
     ${CUDA_INCLUDE_DIRS}
-    ${TensorRT_INCLUDE_DIRS}
+    ${TensorRT_INCLUDE_DIR}
     ${GSTREAMER_INCLUDE_DIRS}
     ${GSTREAMER_APP_INCLUDE_DIRS}
     ${CMAKE_SOURCE_DIR}/src
-    ${OpenCV_INCLUDE_DIRS}  # Include OpenCV headers
 )
 
 # Linker directories
 link_directories(
     ${CUDA_TOOLKIT_ROOT_DIR}/lib64
-    ${TensorRT_LIBRARY_DIRS}
-    ${GStreamer_LIBRARY_DIRS}
+    ${GSTREAMER_LIBRARY_DIRS}
     ${GSTREAMER_APP_LIBRARY_DIRS}
 )
 
@@ -46,20 +66,19 @@ link_directories(
 set(LIBS 
     ${CUDA_LIBRARIES}
     ${TensorRT_LIBRARIES}
-    ${GStreamer_LIBRARIES}
-    ${OpenCV_LIBRARIES}  # Link OpenCV
+    ${GSTREAMER_LIBRARIES}
     -lnvinfer 
     -lnvonnxparser 
     -lcudart 
     -lnvinfer_plugin
 )
 
-# Source files
+# Add sources and headers
 file(GLOB SOURCES ${CMAKE_SOURCE_DIR}/src/*.cpp)
-file(GLOB HEADERS ${CMAKE_SOURCE_DIR}/src/*.h)
+file(GLOB HEADERS ${CMAKE_SOURCE_DIR}/include/*.h)
 
-# Add executable
-add_executable(TensorRT_Project main.cpp ${SOURCES} ${HEADERS})
+# Create executable
+add_executable(TRT_OBJECT_DETECTION ${SOURCES} ${HEADERS})
 
 # Link libraries to the executable
-target_link_libraries(TensorRT_Project ${LIBS} ${GSTREAMER_LIBRARIES} ${GSTREAMER_APP_LIBRARIES} pthread)
+target_link_libraries(TRT_OBJECT_DETECTION ${LIBS} ${GSTREAMER_LIBRARIES} ${GSTREAMER_APP_LIBRARIES} pthread)

@@ -1,15 +1,10 @@
-#include "TRT_engine.h"
-#include <iostream>
+#include "../include/TRT_MODEL.h"
 
-int main(int argc, char* argv[]) {
-    
-    // Ensure that the correct number of arguments are provided
-    const std::string RED_COLOR = "\033[31m";
-    const std::string GREEN_COLOR = "\033[32m";
-    const std::string YELLOW_COLOR = "\033[33m";
-    const std::string RESET_COLOR = "\033[0m";
 
-    if (argc < 4 || argc > 5) {
+int main(int argc, char* argv[]){
+
+
+     if (argc < 4 || argc > 5) {
         std::cerr << RED_COLOR << "Usage: " << RESET_COLOR << argv[0] << " <mode> <input_path> <engine_path> [onnx_path]" << std::endl;
         std::cerr << YELLOW_COLOR << "  <mode> - Mode of operation: 'convert', 'infer_video', or 'infer_image'" << RESET_COLOR << std::endl;
         std::cerr << YELLOW_COLOR << "  <input_path> - Path to the input video/image or ONNX model" << RESET_COLOR << std::endl;
@@ -17,7 +12,6 @@ int main(int argc, char* argv[]) {
         std::cerr << YELLOW_COLOR << "  [onnx_path] - Path to the ONNX model (only for 'convert' mode)" << RESET_COLOR << std::endl;
         return 1;
     }
-
     std::string mode = argv[1];
     std::string inputPath = argv[2];
     std::string enginePath = argv[3];
@@ -44,16 +38,14 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    MODEL_TRT model_trt;
+    class TRT_MODEL obj_det_model;
 
     if (mode == "convert") {
-        model_trt.convertOnnxToEngine(onnxPath, 50);  // Convert ONNX model to TensorRT engine
+       obj_det_model.convertOnnxToEngine(onnxPath);
     } else if (mode == "infer_video") {
-        //model_trt.inferVideo(inputPath, enginePath);  // Perform inference on video
-        std::cout << "functionality will be added later";
+        
     } else if (mode == "infer_image") {
-        model_trt.inferImage(inputPath, enginePath);  // Perform inference on image
-        std::cout << "functionality will be added later";
+        
     }
 
     return 0;
