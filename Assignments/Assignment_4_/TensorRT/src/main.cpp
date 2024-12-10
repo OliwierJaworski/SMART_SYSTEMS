@@ -12,6 +12,7 @@ int main(int argc, char* argv[]){
         std::cerr << YELLOW_COLOR << "  [onnx_path] - Path to the ONNX model (only for 'convert' mode)" << RESET_COLOR << std::endl;
         return 1;
     }
+    
     std::string mode = argv[1];
     std::string inputPath = argv[2];
     std::string enginePath = argv[3];

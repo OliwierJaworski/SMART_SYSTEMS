@@ -5,12 +5,12 @@
 #include <fstream>
 #include "NvInfer.h"
 #include "NvOnnxParser.h"
+#include "LOGGING.h"
 
 const std::string RED_COLOR = "\033[31m";
 const std::string GREEN_COLOR = "\033[32m";
 const std::string YELLOW_COLOR = "\033[33m";
 const std::string RESET_COLOR = "\033[0m";
-
 
 /*************************************************
  * @brief object detection class 
@@ -35,25 +35,10 @@ public:
     void convertOnnxToEngine(const std::string& onnxFile);
 
 private:
-    class Logger logging;
 
+    Logger logging; //!< Logger class for TensorRT | inherits from nvinfer1::ILogger
+    nvinfer1::IRuntime* runtime; //!< The TensorRT runtime used to deserialize the engine.
+    nvinfer1::ICudaEngine* engine; //!< The TensorRT engine used to run the network.
+    nvinfer1::IExecutionContext* context; //!< The context for executing inference using an ICudaEngine.
 };
 
-/*************************************************
- * @brief Logger class for TensorRT
- * 
- * This class inherits from nvinfer1::ILogger and provides a logging mechanism for TensorRT.
- ************************************************/
-class Logger : public nvinfer1::ILogger {
-public:
-    /**
-     * @brief Logs a message with a given severity.
-     * 
-     * @param severity The severity level of the message.
-     * @param msg The message to log.
-     */
-    void log(Severity severity, const char* msg) noexcept override {
-        if (severity <= Severity::kWARNING)
-            std::cout << msg << std::endl;
-    }
-};
