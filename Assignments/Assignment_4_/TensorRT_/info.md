@@ -61,3 +61,8 @@ if any error shows up try installing different version of cuda for example 12.2 
 - [ENCORD: yolo model explained](https://encord.com/blog/yolo-object-detection-guide/)
 - [DATACAMP: CNN explained](https://www.datacamp.com/tutorial/introduction-to-convolutional-neural-networks-cnns?utm_source=google&utm_medium=paid_search&utm_campaignid=19589720821&utm_adgroupid=157156374951&utm_device=c&utm_keyword=&utm_matchtype=&utm_network=g&utm_adpostion=&utm_creative=684592139651&utm_targetid=aud-1964540900041:dsa-2218886984380&utm_loc_interest_ms=&utm_loc_physical_ms=9197485&utm_content=&utm_campaign=230119_1-sea~dsa~tofu_2-b2c_3-row-p1_4-prc_5-na_6-na_7-le_8-pdsh-go_9-nb-e_10-na_11-na&gad_source=1&gclid=Cj0KCQiAgdC6BhCgARIsAPWNWH26c4S1bXY6IZuRk6nnz8oWmPS7jvQ4PgVscG7n4hNTWopI-3dnPpgaArVTEALw_wcB)
 - [Ultralytics: ONNX export YOLOV11](https://docs.ultralytics.com/integrations/onnx/)
+- [nvidia docs](https://docs.nvidia.com/deeplearning/tensorrt/archives/tensorrt-825/api/index.html#api)
+
+### issues noted
+- [onnx(int64 model)-> transformed to int32](https://forums.developer.nvidia.com/t/onnx-model-int64-weights/124248/9)
+- 
