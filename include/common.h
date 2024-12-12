@@ -1,5 +1,5 @@
 const std::vector<std::string> CLASS_NAMES = {
-    "person",         "bicycle",    "car",           "motorcycle",    "airplane",     "bus",           "train",
+    "cola",         "fanta",    "ice_tea",           "sprite",    "airplane",     "bus",           "train",
     "truck",          "boat",       "traffic light", "fire hydrant",  "stop sign",    "parking meter", "bench",
     "bird",           "cat",        "dog",           "horse",         "sheep",        "cow",           "elephant",
     "bear",           "zebra",      "giraffe",       "backpack",      "umbrella",     "handbag",       "tie",

@@ -1,0 +1,56 @@
+Determining if the pthread_create exist failed with the following output:
+Change Dir: /home/jetsonoli/Desktop/Project_Folder/SMART_SYSTEMS/Assignments/Assignment_4_/Yolo-V11-cpp-TensorRT/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_56ca9/fast"
+/usr/bin/make -f CMakeFiles/cmTC_56ca9.dir/build.make CMakeFiles/cmTC_56ca9.dir/build
+make[1]: Entering directory '/home/jetsonoli/Desktop/Project_Folder/SMART_SYSTEMS/Assignments/Assignment_4_/Yolo-V11-cpp-TensorRT/build/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_56ca9.dir/CheckSymbolExists.cxx.o
+/usr/bin/aarch64-linux-gnu-g++    -std=c++1z -o CMakeFiles/cmTC_56ca9.dir/CheckSymbolExists.cxx.o -c /home/jetsonoli/Desktop/Project_Folder/SMART_SYSTEMS/Assignments/Assignment_4_/Yolo-V11-cpp-TensorRT/build/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx
+Linking CXX executable cmTC_56ca9
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_56ca9.dir/link.txt --verbose=1
+/usr/bin/aarch64-linux-gnu-g++       CMakeFiles/cmTC_56ca9.dir/CheckSymbolExists.cxx.o  -o cmTC_56ca9 
+CMakeFiles/cmTC_56ca9.dir/CheckSymbolExists.cxx.o: In function `main':
+CheckSymbolExists.cxx:(.text+0x14): undefined reference to `pthread_create'
+CheckSymbolExists.cxx:(.text+0x18): undefined reference to `pthread_create'
+collect2: error: ld returned 1 exit status
+CMakeFiles/cmTC_56ca9.dir/build.make:97: recipe for target 'cmTC_56ca9' failed
+make[1]: *** [cmTC_56ca9] Error 1
+make[1]: Leaving directory '/home/jetsonoli/Desktop/Project_Folder/SMART_SYSTEMS/Assignments/Assignment_4_/Yolo-V11-cpp-TensorRT/build/CMakeFiles/CMakeTmp'
+Makefile:126: recipe for target 'cmTC_56ca9/fast' failed
+make: *** [cmTC_56ca9/fast] Error 2
+
+File /home/jetsonoli/Desktop/Project_Folder/SMART_SYSTEMS/Assignments/Assignment_4_/Yolo-V11-cpp-TensorRT/build/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx:
+/* */
+#include <pthread.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef pthread_create
+  return ((int*)(&pthread_create))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the function pthread_create exists in the pthreads failed with the following output:
+Change Dir: /home/jetsonoli/Desktop/Project_Folder/SMART_SYSTEMS/Assignments/Assignment_4_/Yolo-V11-cpp-TensorRT/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_2d00e/fast"
+/usr/bin/make -f CMakeFiles/cmTC_2d00e.dir/build.make CMakeFiles/cmTC_2d00e.dir/build
+make[1]: Entering directory '/home/jetsonoli/Desktop/Project_Folder/SMART_SYSTEMS/Assignments/Assignment_4_/Yolo-V11-cpp-TensorRT/build/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_2d00e.dir/CheckFunctionExists.cxx.o
+/usr/bin/aarch64-linux-gnu-g++    -DCHECK_FUNCTION_EXISTS=pthread_create   -std=c++1z -o CMakeFiles/cmTC_2d00e.dir/CheckFunctionExists.cxx.o -c /home/jetsonoli/Desktop/Project_Folder/SMART_SYSTEMS/Assignments/Assignment_4_/Yolo-V11-cpp-TensorRT/build/CMakeFiles/CheckLibraryExists/CheckFunctionExists.cxx
+Linking CXX executable cmTC_2d00e
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_2d00e.dir/link.txt --verbose=1
+/usr/bin/aarch64-linux-gnu-g++   -DCHECK_FUNCTION_EXISTS=pthread_create    CMakeFiles/cmTC_2d00e.dir/CheckFunctionExists.cxx.o  -o cmTC_2d00e -lpthreads 
+/usr/bin/ld: cannot find -lpthreads
+collect2: error: ld returned 1 exit status
+CMakeFiles/cmTC_2d00e.dir/build.make:97: recipe for target 'cmTC_2d00e' failed
+make[1]: *** [cmTC_2d00e] Error 1
+make[1]: Leaving directory '/home/jetsonoli/Desktop/Project_Folder/SMART_SYSTEMS/Assignments/Assignment_4_/Yolo-V11-cpp-TensorRT/build/CMakeFiles/CMakeTmp'
+Makefile:126: recipe for target 'cmTC_2d00e/fast' failed
+make: *** [cmTC_2d00e/fast] Error 2
+
+

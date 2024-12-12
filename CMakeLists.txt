@@ -1,5 +1,5 @@
-﻿cmake_minimum_required(VERSION 3.18)
-
+﻿cmake_minimum_required(VERSION 3.10)
+set(CMAKE_CUDA_COMPILER /usr/local/cuda/bin/nvcc)
 # Project declaration with C++ and CUDA support
 project(YOLOv11TRT LANGUAGES CXX CUDA)
 
@@ -8,8 +8,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+
 # Define the path to TensorRT installation
-set(TENSORRT_PATH "F:/Program Files/TensorRT-8.6.1.6")  # Update this to the actual path for TensorRT
+set(TENSORRT_PATH "/usr")  # Update this to the actual path for TensorRT
 
 # Define the path to OpenCV installation
 
@@ -30,6 +31,13 @@ if(NOT CUDA_FOUND)
     message(FATAL_ERROR "CUDA not found. Please install the CUDA Toolkit.")
 endif()
 
+find_package(PkgConfig) 
+pkg_search_module(GLIB REQUIRED glib-2.0) 
+pkg_check_modules(GSTREAMER REQUIRED gstreamer-1.0)
+pkg_check_modules(GST_APP REQUIRED gstreamer-app-1.0)
+pkg_check_modules(GST_VIDEO REQUIRED gstreamer-video-1.0)
+pkg_check_modules(GST_RTSP REQUIRED gstreamer-rtsp-server-1.0)  # Add RTSP server package
+
 # Include directories for TensorRT
 include_directories(${TENSORRT_PATH}/include)
 
@@ -37,10 +45,11 @@ include_directories(${TENSORRT_PATH}/include)
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 # Define source files (including CUDA sources)
+
 set(SOURCES
-    main.cpp
-    src/yolov11.cpp
-    src/preprocess.cu
+    ${CMAKE_SOURCE_DIR}/main.cpp
+    ${CMAKE_SOURCE_DIR}/src/YOLOv11.cpp
+    ${CMAKE_SOURCE_DIR}/src/preprocess.cu
 )
 
 # Create executable (CMake handles CUDA sources automatically)
@@ -55,15 +64,20 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${OpenCV_INCLUDE_DIRS}
     ${CUDA_INCLUDE_DIRS}
     ${TENSORRT_PATH}/include
+    ${GLIB_INCLUDE_DIRS}
+    ${GSTREAMER_INCLUDE_DIRS}
+    ${GST_APP_INCLUDE_DIRS}
+    ${GST_VIDEO_INCLUDE_DIRS}
+    ${GST_RTSP_INCLUDE_DIRS}  # Include RTSP headers
 )
 
 # Link TensorRT libraries
 # Specify full paths to TensorRT libraries to avoid relying on link_directories
 set(TENSORRT_LIBS
-    "${TENSORRT_PATH}/lib/nvinfer.lib"
-    "${TENSORRT_PATH}/lib/nvonnxparser.lib"
-    "${TENSORRT_PATH}/lib/nvparsers.lib"
-    "${TENSORRT_PATH}/lib/nvinfer_plugin.lib"
+    nvinfer
+    nvonnxparser
+    nvparsers
+    nvinfer_plugin
 )
 
 # Link libraries to the target
@@ -71,6 +85,11 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     ${OpenCV_LIBS}
     ${CUDA_LIBRARIES}
     ${TENSORRT_LIBS}
+    ${GSTREAMER_LIBRARIES}
+    ${GLIB_LIBRARIES}
+    ${GST_APP_LIBRARIES}
+    ${GST_VIDEO_LIBRARIES}
+    ${GST_RTSP_LIBRARIES}  # Link against RTSP libraries
 )
 
 # Enable separable compilation for CUDA (optional but recommended)
