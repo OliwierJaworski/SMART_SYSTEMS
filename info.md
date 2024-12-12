@@ -62,7 +62,9 @@ if any error shows up try installing different version of cuda for example 12.2 
 - [DATACAMP: CNN explained](https://www.datacamp.com/tutorial/introduction-to-convolutional-neural-networks-cnns?utm_source=google&utm_medium=paid_search&utm_campaignid=19589720821&utm_adgroupid=157156374951&utm_device=c&utm_keyword=&utm_matchtype=&utm_network=g&utm_adpostion=&utm_creative=684592139651&utm_targetid=aud-1964540900041:dsa-2218886984380&utm_loc_interest_ms=&utm_loc_physical_ms=9197485&utm_content=&utm_campaign=230119_1-sea~dsa~tofu_2-b2c_3-row-p1_4-prc_5-na_6-na_7-le_8-pdsh-go_9-nb-e_10-na_11-na&gad_source=1&gclid=Cj0KCQiAgdC6BhCgARIsAPWNWH26c4S1bXY6IZuRk6nnz8oWmPS7jvQ4PgVscG7n4hNTWopI-3dnPpgaArVTEALw_wcB)
 - [Ultralytics: ONNX export YOLOV11](https://docs.ultralytics.com/integrations/onnx/)
 - [nvidia docs](https://docs.nvidia.com/deeplearning/tensorrt/archives/tensorrt-825/api/index.html#api)
-
+-[How to get bounding-boxes and class probabilities from Yolov5 and Yolov8 raw output?](https://medium.com/@reachraktim/how-to-get-bounding-boxes-and-class-probabilities-from-yolov5-and-yolov8-raw-output-4c4d3dd93fae)
+- [model inspection, what it does behind the scenes](https://netron.app/)
+- [borarak deepstream application](https://github.com/borarak/yolov8_deepstream.git)
 ### issues noted
 - [onnx(int64 model)-> transformed to int32](https://forums.developer.nvidia.com/t/onnx-model-int64-weights/124248/9)
 - 
