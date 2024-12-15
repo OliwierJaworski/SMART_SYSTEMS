@@ -404,9 +404,15 @@ static GstFlowReturn new_sample (GstElement *sink, CustomData *data) {
             }
             printf("\n");
         
-        cv::Mat img(IMAGE_H,IMAGE_W,CV_8UC3,map.data);
+        //cv::Mat img(IMAGE_H,IMAGE_W,CV_8UC3,map.data);
+        // Assuming `map.data` points to your YV12 data
+        cv::Mat yv12_img(IMAGE_H + IMAGE_H / 2, IMAGE_W, CV_8UC1, map.data);
 
-        bool success = cv::imwrite("output_image.jpg", img);
+        // Convert YV12 (YUV) to BGR format using cvtColor
+        cv::Mat bgr_img;
+        cv::cvtColor(yv12_img, bgr_img, cv::COLOR_YUV2BGR_YV12);
+
+        bool success = cv::imwrite("output_image.jpg", bgr_img);
         } else {
             std::cerr << "Failed to map buffer." << std::endl;
         }
