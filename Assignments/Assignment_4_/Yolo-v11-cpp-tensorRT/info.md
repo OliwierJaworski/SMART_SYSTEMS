@@ -66,9 +66,10 @@ if any error shows up try installing different version of cuda for example 12.2 
 - [model inspection, what it does behind the scenes](https://netron.app/)
 - [borarak deepstream application](https://github.com/borarak/yolov8_deepstream.git)
 - [understanding how to set up a gstreamer pipeline and element inspection](https://www.youtube.com/watch?v=1g65gP5kfhQ)
-
+- [data modification gstreamer](https://xilinx-wiki.atlassian.net/wiki/spaces/A/pages/81231874/Video+Data+Modification+in+Gstreamer+Application)
+- [gstreamer own data modification guide](https://gstreamer.freedesktop.org/documentation/tutorials/basic/short-cutting-the-pipeline.html?gi-language=c)
 ### other usefull info about gstreamer
 - gst-inspect-1.0 | grep image "-> grep all the elements involving images"
 ### issues noted
 - [onnx(int64 model)-> transformed to int32](https://forums.developer.nvidia.com/t/onnx-model-int64-weights/124248/9)
-- 
+- [streaming stopped, reason not-negotiated (-4)](https://stackoverflow.com/questions/37680843/gstreamer-receive-video-streaming-task-paused-reason-not-negotiated-4)

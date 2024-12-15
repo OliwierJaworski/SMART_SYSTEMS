@@ -14,6 +14,10 @@
 #include <gst/rtsp-server/rtsp-server.h>
 
 
+#define IMAGE_H 300
+#define IMAGE_W 300
+#define CHUNK_SIZE IMAGE_H * IMAGE_W * 3
+
 /**
  * @brief Setting up Tensorrt logger
 */
@@ -25,11 +29,32 @@ class Logger : public nvinfer1::ILogger {
     }
 }logger;
 
+typedef struct _CustomData {
+    GstElement  *pipeline, 
+                *source, 
+                *jpeg_parser,
+                *decoder,
+                *app_sink,
+                *app_source,
+                *encoder,
+                *sink;
+
+    guint64 frame_count;   /* Number of samples generated so far (for timestamp generation) */
+    guint sourceid;        /* To control the GSource */
+}CustomData;
+
 
 static void on_pad_added(GstElement *src, GstPad *new_pad, GstElement *depay);
 static void on_pad_added_image(GstElement *decoder, GstPad *pad, GstElement *converter);
 static gboolean on_bus_message(GstBus *bus, GstMessage *message, GMainLoop *loop);
 static GstFlowReturn on_new_sample_from_sink(GstAppSink *appsink, gpointer user_data);
+static void start_feed (GstElement *source, guint size, CustomData *data);
+static void stop_feed (GstElement *source, CustomData *data);
+static gboolean push_data (CustomData *data);
+static GstFlowReturn new_sample (GstElement *sink, CustomData *data);
+static GstPadProbeReturn event_probe_callback(GstPad *pad, GstPadProbeInfo *info, gpointer user_data);
+static GstPadProbeReturn buffer_probe_callback(GstPad *pad, GstPadProbeInfo *info, gpointer user_data); 
+
 
 int main(int argc, char* argv[]) {
 
@@ -38,7 +63,7 @@ int main(int argc, char* argv[]) {
     const std::string GREEN_COLOR = "\033[32m";
     const std::string YELLOW_COLOR = "\033[33m";
     const std::string RESET_COLOR = "\033[0m";
-
+    
     // Check for valid number of arguments
     if (argc < 4 || argc > 5) {
         std::cerr << RED_COLOR << "Usage: " << RESET_COLOR << argv[0]
@@ -165,52 +190,84 @@ int main(int argc, char* argv[]) {
             g_object_unref(pipeline);
 //----------------------------------------------------------------------------------------------------
             }else if (mode == "infer_image"){
-            printf("%sreached infer_image%s\n",GREEN_COLOR,RESET_COLOR);
-            GstElement *pipeline, 
-                       *source, 
-                       *jpeg_parser,
-                       *decoder,
-                       *encoder,
-                       *sink;
+            printf("reached infer_image\n");
 
             GstBus *bus;
             GstMessage *msg;
-            GstStateChangeReturn ret;
             GMainLoop *loop;
+            CustomData data;
+
+            memset (&data, 0, sizeof (data));
 
             gst_init(&argc, &argv);
 
             loop = g_main_loop_new(NULL, FALSE);
 
-            pipeline = gst_pipeline_new("image-inference");
-            source = gst_element_factory_make("filesrc","file-source");
-            jpeg_parser = gst_element_factory_make("jpegparse","jpeg-parser");
-            decoder = gst_element_factory_make("jpegdec","jpeg_decoder");
-            encoder = gst_element_factory_make("nvjpegenc","jpeg_encoder");
-            sink = gst_element_factory_make("filesink","sink_to_file");
+            data.pipeline = gst_pipeline_new("image-inference");
+
+            //get image and process it
+            data.source = gst_element_factory_make("filesrc","file-source");
+            data.jpeg_parser = gst_element_factory_make("jpegparse","jpeg-parser");
+            data.decoder = gst_element_factory_make("jpegdec","jpeg_decoder");
+            data.app_sink = gst_element_factory_make("appsink","infer_begin");
+
+            //get processed image into file
+            //app_set = gst_element_factory_make("appsink","infer_end");
+            //encoder = gst_element_factory_make("nvjpegenc","jpeg_encoder");
+            //sink = gst_element_factory_make("filesink","sink_to_file");
         
-            if (!pipeline || !source || !jpeg_parser || !decoder || !encoder || !sink){
-                g_printerr("One element could not be created, exitin.\n");
+            if (!data.pipeline || !data.source || !data.jpeg_parser || !data.decoder || !data.app_sink){
+                g_printerr("One element could not be created, exiting.\n");
             }
-
-            g_object_set(G_OBJECT(source),"location",argv[2],NULL);
+            
+            g_object_set(G_OBJECT(data.source),"location",argv[2],NULL);
             //g_object_set(G_OBJECT(decoder),"DeepStream",TRUE, NULL); //!<- error no caps if using nvjpegdec
-            g_object_set(G_OBJECT(sink),"location","./output_image_jpeg.jpg", NULL);
+            //g_object_set(G_OBJECT(sink),"location","./output/output_image.jpg", NULL);
+            
+            //configure appsink
+            GstCaps *fixed_image_caps = gst_caps_new_simple(
+                "video/x-raw",
+                "format", G_TYPE_STRING, "RGB",
+                "width", G_TYPE_INT, IMAGE_H,
+                "height", G_TYPE_INT, IMAGE_W,
+                "framerate", GST_TYPE_FRACTION, 1, 1,
+                NULL
+            );
 
-            bus = gst_pipeline_get_bus(GST_PIPELINE(pipeline));
+            //g_signal_connect(data.app_sink,"need-data", G_CALLBACK( start_feed ), &data);
+            //g_signal_connect(data.app_sink,"enough-data", G_CALLBACK( stop_feed ), &data);
+            //g_object_set (data.app_sink, "emit-signals", TRUE, "caps", fixed_image_caps, NULL);
+            g_object_set (data.app_sink, "emit-signals", TRUE, NULL);
+            g_signal_connect(data.app_sink, "new-sample", G_CALLBACK( new_sample ), &data);
+            gst_caps_unref(fixed_image_caps);
+
+
+            bus = gst_pipeline_get_bus(GST_PIPELINE(data.pipeline));
             gst_bus_add_watch(bus,(GstBusFunc)on_bus_message,loop);
             gst_object_unref (bus);
 
-            gst_bin_add_many(GST_BIN(pipeline), source, jpeg_parser, decoder, encoder, sink, NULL);
-            //!<- linking of elements happens here 
+            gst_bin_add_many(GST_BIN(data.pipeline), data.source, data.jpeg_parser, data.decoder, data.app_sink, NULL);
+        
+            if (gst_element_link_many (data.source, data.jpeg_parser, data.decoder, data.app_sink, NULL) != TRUE) 
+            {
+                g_printerr ("Elements could not be linked.\n");
+                gst_object_unref (data.pipeline);
+                return -1;
+            }
 
-            gst_element_link_many(source, jpeg_parser, decoder, encoder, sink, NULL);
+            GstPad *src_pad_jpeg_parser = gst_element_get_static_pad(data.jpeg_parser, "src");
+            GstPad *src_pad_decoder = gst_element_get_static_pad(data.app_sink, "sink");
 
-            gst_element_set_state(pipeline,GstState::GST_STATE_PLAYING);
+            gst_pad_add_probe(src_pad_jpeg_parser, GST_PAD_PROBE_TYPE_EVENT_DOWNSTREAM, event_probe_callback, NULL, NULL);
+            gst_pad_add_probe(src_pad_decoder, GST_PAD_PROBE_TYPE_BUFFER, buffer_probe_callback, NULL, NULL);
+            
+            
+
+            gst_element_set_state(data.pipeline,GstState::GST_STATE_PLAYING);
             g_main_loop_run (loop);
-            gst_element_set_state(pipeline, GST_STATE_NULL);
+            gst_element_set_state(data.pipeline, GST_STATE_NULL);
 
-            gst_object_unref(GST_OBJECT(pipeline));
+            gst_object_unref(GST_OBJECT(data.pipeline));
             g_main_loop_unref(loop);            
         }
         }
@@ -238,16 +295,161 @@ static void on_pad_added(GstElement *src, GstPad *new_pad, GstElement *depay) {
 
 // Bus message handler (error and EOS handling)
 static gboolean on_bus_message(GstBus *bus, GstMessage *message, GMainLoop *loop) {
-    if (GST_MESSAGE_TYPE(message) == GST_MESSAGE_ERROR) {
-        GError *err;
-        gchar *debug_info;
-        gst_message_parse_error(message, &err, &debug_info);
-        g_printerr("Error received: %s\n", err->message);
-        g_error_free(err);
-        g_free(debug_info);
-        g_main_loop_quit(loop);
-    } else if (GST_MESSAGE_TYPE(message) == GST_MESSAGE_EOS) {
-        g_main_loop_quit(loop);
+    GError *err;
+    gchar *debug_info;
+
+    switch (GST_MESSAGE_TYPE(message)) {
+        case GST_MESSAGE_ERROR:
+            gst_message_parse_error(message, &err, &debug_info);
+            g_printerr("Error received from element %s: %s\n",
+                       GST_OBJECT_NAME(message->src), err->message);
+            if (debug_info) {
+                g_printerr("Debug info: %s\n", debug_info);
+            } else {
+                g_printerr("No additional debug info available.\n");
+            }
+            g_error_free(err);
+            g_free(debug_info);
+            break;
+        default:
+            break;
     }
     return TRUE;
 }
+
+static void start_feed (GstElement *source, guint size, CustomData *data) {
+  if (data->sourceid == 0) {
+    g_print ("Start feeding\n");
+    data->sourceid = g_idle_add ((GSourceFunc) push_data, data);
+  }
+}
+
+static void stop_feed (GstElement *source, CustomData *data) {
+  if (data->sourceid != 0) {
+    g_print ("Stop feeding\n");
+    g_source_remove (data->sourceid);
+    data->sourceid = 0;
+  }
+}
+
+static gboolean push_data (CustomData *data) {
+    printf("pushing data\n");
+    GstBuffer *buffer;
+    GstFlowReturn ret;
+    GstMapInfo map;
+    
+    /* Create a new empty buffer */
+    buffer = gst_buffer_new_and_alloc (CHUNK_SIZE);
+
+    /* Set its timestamp and duration */
+    GST_BUFFER_TIMESTAMP (buffer) = gst_util_uint64_scale (data->frame_count, GST_SECOND, 60);
+    GST_BUFFER_DURATION (buffer) = gst_util_uint64_scale (1, GST_SECOND, 60);
+
+    data->frame_count++;  
+    /* create samples here */
+    
+    /* Map the buffer to read its contents */
+    if (gst_buffer_map(buffer, &map, GST_MAP_READ)) {
+        printf("Buffer size: %zu bytes\n", map.size);
+
+        // Print the first few bytes of the buffer
+        printf("Buffer content (first 10 bytes): ");
+        for (size_t i = 0; i < map.size && i < (CHUNK_SIZE); i++) {
+            printf("%02X ", map.data[i]);
+        }
+        printf("\n");
+
+        gst_buffer_unmap(buffer, &map);
+    } else {
+        printf("Failed to map buffer\n");
+    }
+    /* Push the buffer into the appsrc */
+
+    g_signal_emit_by_name (data->app_source, "push-buffer", buffer, &ret);
+
+    /* Free the buffer now that we are done with it */
+    gst_buffer_unref (buffer);
+
+    if (ret != GST_FLOW_OK) {
+        /* We got some error, stop sending data */
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+static GstFlowReturn new_sample (GstElement *sink, CustomData *data) {
+    printf("sample received\n");
+    GstSample *sample;
+    GstBuffer *buffer;
+    GstFlowReturn ret;
+    GstMapInfo map;
+
+    /* Retrieve the buffer */
+    g_signal_emit_by_name (sink, "pull-sample", &sample);
+    if (sample) {
+
+        g_print ("\n*\n");
+        buffer = gst_sample_get_buffer(sample);
+
+        if (gst_buffer_map(buffer, &map, GST_MAP_READ)) {
+            // Print the first few bytes of the buffer
+            int num_bytes_to_print = 2000;  // Print first 30 bytes for example
+            printf("Buffer data (first %d bytes):\n", num_bytes_to_print);
+            for (int i = 0; i < num_bytes_to_print; i++) {
+                printf("%02x ", map.data[i]);
+                if ((i + 1) % 10 == 0) {
+                    printf("\n");
+                }
+            }
+            printf("\n");
+        
+        cv::Mat img(IMAGE_H,IMAGE_W,CV_8UC3,map.data);
+
+        bool success = cv::imwrite("output_image.jpg", img);
+        } else {
+            std::cerr << "Failed to map buffer." << std::endl;
+        }
+        gst_buffer_unmap(buffer, &map);
+        gst_sample_unref (sample);
+
+        return GST_FLOW_OK;
+  }
+  return GST_FLOW_ERROR;
+}
+
+static GstPadProbeReturn event_probe_callback(GstPad *pad, GstPadProbeInfo *info, gpointer user_data) {
+    g_print("Event probe triggered\n");
+    GstCaps *caps = gst_pad_get_current_caps(pad);
+    gchar *caps_str = gst_caps_to_string(caps);
+    printf("Caps for pad of jpeg_parse : %s\n", caps_str);
+
+    gst_caps_unref(caps);
+    g_free(caps_str);
+    return GST_PAD_PROBE_PASS;
+}
+
+static GstPadProbeReturn buffer_probe_callback(GstPad *pad, GstPadProbeInfo *info, gpointer user_data) {
+    GstBuffer *buffer = GST_PAD_PROBE_INFO_BUFFER(info);
+    if (buffer) {
+        GstCaps *caps = gst_pad_get_current_caps(pad);
+        gchar *caps_str = gst_caps_to_string(caps);
+        printf("Caps for pad of appsink: %s\n", caps_str);
+        g_print("Buffer probe triggered: Buffer size = %zu\n", gst_buffer_get_size(buffer));
+
+        gst_caps_unref(caps);
+        g_free(caps_str);
+    }
+    return GST_PAD_PROBE_PASS;
+}
+
+/* Functions below print the Capabilities in a human-friendly format */
+static gboolean print_field (GQuark field, const GValue * value, gpointer pfx) {
+  gchar *str = gst_value_serialize (value);
+
+  g_print ("%s  %15s: %s\n", (gchar *) pfx, g_quark_to_string (field), str);
+  g_free (str);
+  return TRUE;
+}
+
+
