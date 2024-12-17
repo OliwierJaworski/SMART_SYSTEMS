@@ -68,6 +68,7 @@ if any error shows up try installing different version of cuda for example 12.2 
 - [understanding how to set up a gstreamer pipeline and element inspection](https://www.youtube.com/watch?v=1g65gP5kfhQ)
 - [data modification gstreamer](https://xilinx-wiki.atlassian.net/wiki/spaces/A/pages/81231874/Video+Data+Modification+in+Gstreamer+Application)
 - [gstreamer own data modification guide](https://gstreamer.freedesktop.org/documentation/tutorials/basic/short-cutting-the-pipeline.html?gi-language=c)
+- [gstreamer multiple pipeline implementation | error with videostream](https://discourse.gstreamer.org/t/appsink-to-appsrc-to-videosink/1289)
 ### other usefull info about gstreamer
 - gst-inspect-1.0 | grep image "-> grep all the elements involving images"
 ### issues noted

@@ -30,13 +30,15 @@ class Logger : public nvinfer1::ILogger {
 }logger;
 
 typedef struct _CustomData {
-    GstElement  *pipeline, 
+    GstElement  *src_pipeline, 
+                *sink_pipeline,
                 *source, 
                 *jpeg_parser,
                 *decoder,
                 *to_bgr_conv,
                 *app_sink,
                 *app_source,
+                *from_bgr_conv,
                 *encoder,
                 *sink;
 
@@ -45,12 +47,17 @@ typedef struct _CustomData {
 }CustomData;
 
 typedef struct RTSP_CustomData {
-    GstElement  *pipeline, 
+    GstElement  *src_pipeline, 
+                *sink_pipeline, 
                 *source, 
                 *depay,
                 *queue,
                 *decoder,
-                *convert,
+                *convert_to_sink,
+                *app_sink,
+
+                *app_source,
+                *convert_to_source,
                 *encoder,
                 *rtppay;
 
@@ -67,6 +74,7 @@ static void start_feed (GstElement *source, guint size, CustomData *data);
 static void stop_feed (GstElement *source, CustomData *data);
 static gboolean push_data (CustomData *data);
 static GstFlowReturn new_sample (GstElement *sink, CustomData *data);
+static GstFlowReturn new_sample_rtsp (GstElement *sink, RTSP_CustomData *data);
 static GstPadProbeReturn event_probe_callback(GstPad *pad, GstPadProbeInfo *info, gpointer user_data);
 static GstPadProbeReturn buffer_probe_callback(GstPad *pad, GstPadProbeInfo *info, gpointer user_data); 
 
@@ -139,184 +147,8 @@ int main(int argc, char* argv[]) {
             if (mode == "infer_video") {
                 
             
-            RTSP_ELEMENTS rtsp_data;
-            memset (&rtsp_data, 0, sizeof (rtsp_data));
-
-            gst_init(&argc, &argv);
-            GstElement *pipeline, *source, *depay, *queue, *decoder, *convert, *encoder, *rtppay;
-            GstRTSPServer *server = gst_rtsp_server_new();
-            GstRTSPMediaFactory *factory = gst_rtsp_media_factory_new();
-
-            // Create elements for receiving RTSP input
-            source = gst_element_factory_make("rtspsrc", "source");
-            depay = gst_element_factory_make("rtph264depay", "depay");
-            queue = gst_element_factory_make("queue", "queue"); // New queue element
-            decoder = gst_element_factory_make("nvv4l2decoder", "decoder");
-            convert = gst_element_factory_make("nvvidconv", "convert");
-            encoder = gst_element_factory_make("nvv4l2h264enc", "encoder");
-            rtppay = gst_element_factory_make("rtph264pay", "rtppay");
-
-            if (!source || !depay || !queue || !decoder || !convert || !encoder || !rtppay) {
-                g_printerr("Element creation failed.\n");
-                return -1;
-            }
-
-            // Set the properties of the RTSP source
-            g_object_set(source, "location", "rtsp://192.168.0.145:8554/xx", "timeout", (guint64)30 * GST_SECOND, 
-                        "do-timestamp", TRUE, "latency", 2000, NULL); // Increase latency to 500ms
-            g_object_set(queue, "max-size-time", 10000000000L, "max-size-buffers", 4000, "max-size-bytes", 10000000, NULL);
-            g_object_set(rtppay, "pt", 96, NULL);
-            g_object_set(encoder, "bitrate", 2000000, "control-rate", 2, "iframeinterval", 30, NULL);
-
-            // Create pipeline and add elements
-            pipeline = gst_pipeline_new("rtsp-in-out-pipeline");
-            gst_bin_add_many(GST_BIN(pipeline), source, depay, queue, decoder, convert, encoder, rtppay, NULL); // Add queue element
-            g_signal_connect(source, "pad-added", G_CALLBACK(on_pad_added), depay);
-
-            // Link elements
-            if (!gst_element_link_many(depay, queue, decoder, convert, encoder, rtppay, NULL)) {
-                g_printerr("Failed to link elements.\n");
-                return -1;
-            }
-
-            // Setup bus watch for error handling
-            GstBus *bus = gst_element_get_bus(pipeline);
-            gst_bus_add_watch(bus, (GstBusFunc)on_bus_message, NULL);
-            gst_object_unref(bus);
-
-            // Start playing the pipeline
-            gst_element_set_state(pipeline, GST_STATE_PLAYING);
-
-            // Set up RTSP media factory
-            gst_rtsp_media_factory_set_launch(factory, 
-                "( rtspsrc location=rtsp://192.168.0.145:8554/xx ! rtph264depay ! queue ! nvv4l2decoder ! nvvidconv ! nvv4l2h264enc bitrate=4000000 control-rate=1 preset-level=1 ! rtph264pay name=pay0 pt=96 )");
-            GstRTSPMountPoints *mounts = gst_rtsp_server_get_mount_points(server);
-            gst_rtsp_mount_points_add_factory(mounts, "/output", factory);
-
-            // Start the RTSP server
-            g_print("RTSP server started at rtsp://127.0.0.1:8554/output\n");
-            gst_rtsp_server_attach(server, NULL);
-
-            // Main loop
-            GMainLoop *loop = g_main_loop_new(NULL, FALSE);
-            g_main_loop_run(loop);
-
-            // Cleanup
-            gst_element_set_state(pipeline, GST_STATE_NULL);
-            g_object_unref(mounts);
-            g_object_unref(server);
-            g_object_unref(pipeline);
-
-
-//----------------------------------------------------------------------------------------------------
             }else if (mode == "infer_image"){
-            printf("reached infer_image\n");
-
-            GstBus *bus;
-            GstMessage *msg;
-            GMainLoop *loop;
-            CustomData data;
-
-            memset (&data, 0, sizeof (data));
-
-            gst_init(&argc, &argv);
-
-            loop = g_main_loop_new(NULL, FALSE);
-
-            data.pipeline = gst_pipeline_new("image-inference");
-
-            //get image and process it
-            data.source = gst_element_factory_make("filesrc","file-source");
-            data.jpeg_parser = gst_element_factory_make("jpegparse","jpeg-parser");
-            //data.decoder = gst_element_factory_make("jpegdec","jpeg_decoder");
-            data.decoder = gst_element_factory_make("jpegdec","jpeg_decoder");
-            data.to_bgr_conv = gst_element_factory_make("videoconvert","bgr_convert");
-            data.app_sink = gst_element_factory_make("appsink","infer_begin");
-
-            //get processed image into file
-            //app_set = gst_element_factory_make("appsink","infer_end");
-            //encoder = gst_element_factory_make("nvjpegenc","jpeg_encoder");
-            //sink = gst_element_factory_make("filesink","sink_to_file");
-        
-            if (!data.pipeline || !data.source || !data.decoder  || !data.to_bgr_conv || !data.app_sink){
-                g_printerr("One element could not be created, exiting.\n");
             }
-            
-            g_object_set(G_OBJECT(data.source),"location",argv[2],NULL);
-            //g_object_set(G_OBJECT(decoder),"DeepStream",TRUE, NULL); //!<- error no caps if using nvjpegdec
-            //g_object_set(G_OBJECT(sink),"location","./output/output_image.jpg", NULL);
-            
-            //configure appsink
-            /*
-            GstCaps *fixed_image_caps = gst_caps_new_simple(
-                "video/x-raw",
-                "format", G_TYPE_STRING, "BGR",
-                "width", G_TYPE_INT, IMAGE_H,
-                "height", G_TYPE_INT, IMAGE_W,
-                "framerate", GST_TYPE_FRACTION, 1, 1,
-                "parsed", G_TYPE_BOOLEAN, true,
-                NULL
-            );
-            */
-
-           GstCaps *fixed_image_caps = gst_caps_new_simple(
-                "video/x-raw",
-                "format", G_TYPE_STRING, "BGR",
-                NULL
-            );
-
-            GstCaps *example = gst_caps_new_simple(
-                "video/x-raw",
-                "format", G_TYPE_STRING, "BGR",
-                "width", G_TYPE_INT, IMAGE_H,
-                "height", G_TYPE_INT, IMAGE_W,
-                "framerate", GST_TYPE_FRACTION, 0, 1,
-                "interlace-mode",G_TYPE_STRING,"progressive", 
-                "multiview-mode",G_TYPE_STRING,"mono",
-                "pixel-aspect-ratio",GST_TYPE_FRACTION, 1, 1,
-                "chroma-site",G_TYPE_STRING,"mpeg2",
-                "colorimetry",G_TYPE_STRING,"1:4:0:0",
-                //"multiview-flags",
-                NULL
-            );
-
-            //g_signal_connect(data.app_sink,"need-data", G_CALLBACK( start_feed ), &data);
-            //g_signal_connect(data.app_sink,"enough-data", G_CALLBACK( stop_feed ), &data);
-            //g_object_set (data.decoder,"DeepStream", TRUE, NULL);
-            g_object_set (data.app_sink, "emit-signals", TRUE, "caps", fixed_image_caps, NULL);
-            g_object_set (data.app_sink, "emit-signals", TRUE, NULL);
-            g_signal_connect(data.app_sink, "new-sample", G_CALLBACK( new_sample ), &data);
-            gst_caps_unref(fixed_image_caps);
-
-
-            bus = gst_pipeline_get_bus(GST_PIPELINE(data.pipeline));
-            gst_bus_add_watch(bus,(GstBusFunc)on_bus_message,loop);
-            gst_object_unref (bus);
-
-            gst_bin_add_many(GST_BIN(data.pipeline), data.source, data.decoder, data.to_bgr_conv, data.app_sink, NULL);
-        
-            if (gst_element_link_many (data.source,  data.decoder, data.to_bgr_conv ,data.app_sink, NULL) != TRUE) 
-            {
-                g_printerr ("Elements could not be linked.\n");
-                gst_object_unref (data.pipeline);
-                return -1;
-            }
-
-            //GstPad *src_pad_jpeg_parser = gst_element_get_static_pad(data.jpeg_parser, "src");
-            GstPad *src_pad_decoder = gst_element_get_static_pad(data.app_sink, "sink");
-            GstPad *bgr_conv_pad = gst_element_get_static_pad(data.to_bgr_conv,"sink");
-            //gst_pad_add_probe(src_pad_jpeg_parser, GST_PAD_PROBE_TYPE_EVENT_DOWNSTREAM, event_probe_callback, NULL, NULL);
-            gst_pad_add_probe(src_pad_decoder, GST_PAD_PROBE_TYPE_BUFFER, buffer_probe_callback, NULL, NULL);
-            gst_pad_add_probe(bgr_conv_pad, GST_PAD_PROBE_TYPE_BUFFER, buffer_probe_callback, NULL, NULL);
-            
-
-            gst_element_set_state(data.pipeline,GstState::GST_STATE_PLAYING);
-            g_main_loop_run (loop);
-            gst_element_set_state(data.pipeline, GST_STATE_NULL);
-
-            gst_object_unref(GST_OBJECT(data.pipeline));
-            g_main_loop_unref(loop);            
-        }
         }
         catch (const std::exception& e) {
             std::cerr << RED_COLOR << "Error during inference: " << e.what() << RESET_COLOR << std::endl;
@@ -424,9 +256,8 @@ static gboolean push_data (CustomData *data) {
 
     return TRUE;
 }
-
-static GstFlowReturn new_sample (GstElement *sink, CustomData *data) {
-    printf("sample received\n");
+static GstFlowReturn new_sample_rtsp (GstElement *sink, RTSP_CustomData *data){
+    g_print ("sample received\n");
     GstSample *sample;
     GstBuffer *buffer;
     GstFlowReturn ret;
@@ -441,7 +272,7 @@ static GstFlowReturn new_sample (GstElement *sink, CustomData *data) {
 
         if (gst_buffer_map(buffer, &map, GST_MAP_READ)) {
             // Print the first few bytes of the buffer
-            int num_bytes_to_print = 2000;  // Print first 30 bytes for example
+            int num_bytes_to_print = 100;  // Print first 30 bytes for example
             printf("Buffer data (first %d bytes):\n", num_bytes_to_print);
             for (int i = 0; i < num_bytes_to_print; i++) {
                 printf("%02x ", map.data[i]);
@@ -451,27 +282,113 @@ static GstFlowReturn new_sample (GstElement *sink, CustomData *data) {
             }
             printf("\n");
         
-        //cv::Mat img(IMAGE_H,IMAGE_W,CV_8UC3,map.data);
-        // Assuming `map.data` points to your YV12 data
-        //cv::Mat yv12_img(IMAGE_H + IMAGE_H / 2, IMAGE_W, CV_8UC1, map.data);
         cv::Mat bgr_img(IMAGE_H, IMAGE_W, CV_8UC3, map.data);
-
-        // Convert YV12 (YUV) to BGR format using cvtColor
-        //cv::Mat bgr_img;
-        //cv::cvtColor(yv12_img, bgr_img, cv::COLOR_YUV2BGR_YV12);
+        std::vector<Detection> detections;
+    
         yolov11.preprocess(bgr_img);
         yolov11.infer();
         
-        std::vector<Detection> detections;
+        
         yolov11.postprocess(detections);
-
-        // Draw detections on the image
         yolov11.draw(bgr_img, detections);
 
+        GstBuffer *new_buffer = gst_buffer_new_allocate(NULL, bgr_img.total() * bgr_img.elemSize(), NULL);
+        GstMapInfo new_map;
+        if (gst_buffer_map(new_buffer, &new_map, GST_MAP_WRITE)) {
+            memcpy(new_map.data, bgr_img.data, bgr_img.total() * bgr_img.elemSize());
+            gst_buffer_unmap(new_buffer, &new_map);
+        }
+        
+        GstFlowReturn ret;
+        g_signal_emit_by_name(data->app_source, "push-buffer", new_buffer, &ret);
+
+        if (ret != GST_FLOW_OK) {
+            g_printerr("Failed to push buffer into appsrc\n");
+            gst_buffer_unref(new_buffer);
+            return GST_FLOW_ERROR;
+        }
+        gst_buffer_unref(new_buffer);
+
+        if (ret != GST_FLOW_OK) {
+            g_printerr("Failed to push buffer into appsrc\n");
+            gst_buffer_unref(new_buffer);
+            return GST_FLOW_ERROR;
+        }
+        gst_buffer_unmap(new_buffer, &new_map);
+    }
+        /*
         bool success = cv::imwrite("output_image.jpg", bgr_img);
         } else {
             std::cerr << "Failed to map buffer." << std::endl;
         }
+        */
+        
+        gst_buffer_unmap(buffer, &map);
+        gst_sample_unref (sample);
+
+        return GST_FLOW_OK;
+  }
+  return GST_FLOW_ERROR;
+}
+
+static GstFlowReturn new_sample (GstElement *sink, CustomData *data) {
+    g_print ("sample received\n");
+    GstSample *sample;
+    GstBuffer *buffer;
+    GstFlowReturn ret;
+    GstMapInfo map;
+
+    /* Retrieve the buffer */
+    g_signal_emit_by_name (sink, "pull-sample", &sample);
+    if (sample) {
+        YOLOv11 yolov11("best.engine", logger);
+        g_print ("\n*\n");
+        buffer = gst_sample_get_buffer(sample);
+
+        if (gst_buffer_map(buffer, &map, GST_MAP_READ)) {
+            // Print the first few bytes of the buffer
+            int num_bytes_to_print = 100;  // Print first 30 bytes for example
+            printf("Buffer data (first %d bytes):\n", num_bytes_to_print);
+            for (int i = 0; i < num_bytes_to_print; i++) {
+                printf("%02x ", map.data[i]);
+                if ((i + 1) % 10 == 0) {
+                    printf("\n");
+                }
+            }
+            printf("\n");
+        
+        cv::Mat bgr_img(IMAGE_H, IMAGE_W, CV_8UC3, map.data);
+        std::vector<Detection> detections;
+    
+        yolov11.preprocess(bgr_img);
+        yolov11.infer();
+        
+        
+        yolov11.postprocess(detections);
+        yolov11.draw(bgr_img, detections);
+
+        GstBuffer *new_buffer = gst_buffer_new_allocate(NULL, bgr_img.total() * bgr_img.elemSize(), NULL);
+        GstMapInfo new_map;
+        if (gst_buffer_map(new_buffer, &new_map, GST_MAP_WRITE)) {
+            memcpy(new_map.data, bgr_img.data, bgr_img.total() * bgr_img.elemSize());
+        }
+        
+        g_signal_emit_by_name (data->app_source, "push-buffer", new_buffer, &ret);
+
+        if (ret != GST_FLOW_OK) {
+            g_printerr("Failed to push buffer into appsrc\n");
+            gst_buffer_unref(new_buffer);
+            return GST_FLOW_ERROR;
+        }
+        gst_buffer_unmap(new_buffer, &new_map);
+    }
+        /*
+        bool success = cv::imwrite("output_image.jpg", bgr_img);
+        } else {
+            std::cerr << "Failed to map buffer." << std::endl;
+        }
+        */
+        
         gst_buffer_unmap(buffer, &map);
         gst_sample_unref (sample);
 
@@ -513,5 +430,3 @@ static gboolean print_field (GQuark field, const GValue * value, gpointer pfx) {
   g_free (str);
   return TRUE;
 }
-
-
