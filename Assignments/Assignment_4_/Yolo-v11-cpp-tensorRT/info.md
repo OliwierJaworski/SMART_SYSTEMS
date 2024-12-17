@@ -71,6 +71,7 @@ if any error shows up try installing different version of cuda for example 12.2 
 - [gstreamer multiple pipeline implementation | error with videostream](https://discourse.gstreamer.org/t/appsink-to-appsrc-to-videosink/1289)
 ### other usefull info about gstreamer
 - gst-inspect-1.0 | grep image "-> grep all the elements involving images"
+- [where to get package for jetson nano](https://developer.nvidia.com/embedded/deepstream-on-jetson-downloads-archived)
 ### issues noted
 - [onnx(int64 model)-> transformed to int32](https://forums.developer.nvidia.com/t/onnx-model-int64-weights/124248/9)
 - [streaming stopped, reason not-negotiated (-4)](https://stackoverflow.com/questions/37680843/gstreamer-receive-video-streaming-task-paused-reason-not-negotiated-4)
