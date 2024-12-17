@@ -177,7 +177,7 @@ int main(int argc, char* argv[]) {
                 NULL);
 
             g_object_set (G_OBJECT (element_data.pgie),
-                "config-file-path", "~/Desktop/Project_Folder/SMART_SYSTEMS/Assignments/Assignment_4_/Yolo-v11-cpp-tensorRT/config_files/nvinfer_config.txt", 
+                "config-file-path", "/home/jetsonoli/Desktop/Project_Folder/SMART_SYSTEMS/Assignments/Assignment_4_/Yolo-v11-cpp-tensorRT/config_files/nvinfer_config.txt", 
                 NULL);
 
             g_object_set (G_OBJECT (element_data.tracker),
@@ -267,14 +267,14 @@ int main(int argc, char* argv[]) {
             g_print ("Running...\n");
 
             // Set up RTSP media factory
-            gst_rtsp_media_factory_set_launch(factory, 
+            gst_rtsp_media_factory_set_launch(element_data.factory, 
                 "( rtspsrc location=rtsp://192.168.0.145:8554/xx ! rtph264depay ! queue ! nvv4l2decoder ! nvvidconv ! nvv4l2h264enc bitrate=4000000 control-rate=1 preset-level=1 ! rtph264pay name=pay0 pt=96 )");
-            GstRTSPMountPoints *mounts = gst_rtsp_server_get_mount_points(server);
-            gst_rtsp_mount_points_add_factory(mounts, "/output", factory);
+            GstRTSPMountPoints *mounts = gst_rtsp_server_get_mount_points(element_data.server);
+            gst_rtsp_mount_points_add_factory(mounts, "/output", element_data.factory);
 
             // Start the RTSP server
             g_print("RTSP server started at rtsp://127.0.0.1:8554/output\n");
-            gst_rtsp_server_attach(server, NULL);
+            gst_rtsp_server_attach(element_data.server, NULL);
 
             g_main_loop_run (element_data.loop);
 
@@ -285,6 +285,8 @@ int main(int argc, char* argv[]) {
             g_print ("Deleting pipeline\n");
             gst_object_unref (GST_OBJECT (element_data.pipeline));
             g_source_remove (element_data.bus_watch_id);
+            g_object_unref(mounts);
+            g_object_unref(element_data.server);
             g_main_loop_unref (element_data.loop);
         }
         catch (const std::exception& e) {
