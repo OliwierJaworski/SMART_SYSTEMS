@@ -38,21 +38,17 @@
 [property]
 gpu-id=0
 net-scale-factor=0.0039215697906911373
-#<- engine file provided ---model-file=../../../../samples/models/Primary_Detector/resnet10.caffemodel
-#<- engine file provided ---proto-file=../../../../samples/models/Primary_Detector/resnet10.prototxt
 model-engine-file=./best.engine
 labelfile-path=./labels.txt
-output-blob-names=prob;bbox 
-#<- engine file provided ---int8-calib-file=../../../../samples/models/Primary_Detector/cal_trt.bin
+output-blob-names=output0
 force-implicit-batch-dim=1
 batch-size=1
-network-mode=1
+parse-bbox-func-name=NvDsInferParseCustomBatchedYoloV5NMSTLT
+custom-lib-path = /home/jetsonoli/Desktop/Project_Folder/SMART_SYSTEMS/Assignments/Assignment_4_/Yolo-v11-cpp-tensorRT/config_files/nvdsinfer_customparser/my_implementation/custom_yolo_parser.so
+network-mode=0
 num-detected-classes=4
 interval=0
 gie-unique-id=1
-#<- engine file provided ---output-blob-names=conv2d_bbox;conv2d_cov/Sigmoid
-#scaling-filter=0
-#scaling-compute-hw=0
 cluster-mode=0
 
 [class-attrs-all]

@@ -75,3 +75,19 @@ if any error shows up try installing different version of cuda for example 12.2 
 ### issues noted
 - [onnx(int64 model)-> transformed to int32](https://forums.developer.nvidia.com/t/onnx-model-int64-weights/124248/9)
 - [streaming stopped, reason not-negotiated (-4)](https://stackoverflow.com/questions/37680843/gstreamer-receive-video-streaming-task-paused-reason-not-negotiated-4)
+
+###configuration error of inference 
+0:00:08.917077598 22138   0x5584d60320 ERROR                nvinfer gstnvinfer.cpp:632:gst_nvinfer_logger:<primary-nvinference-engine> NvDsInferContext[UID 1]: Error in NvDsInferContextImpl::parseBoundingBox() <nvdsinfer_context_impl_output_parsing.cpp:59> [UID = 1]: Could not find output coverage layer for parsing objects
+0:00:08.917210518 22138   0x5584d60320 ERROR                nvinfer gstnvinfer.cpp:632:gst_nvinfer_logger:<primary-nvinference-engine> NvDsInferContext[UID 1]: Error in NvDsInferContextImpl::fillDetectionOutput() <nvdsinfer_context_impl_output_parsing.cpp:735> [UID = 1]: Failed to parse bboxes
+Segmentation fault (core dumped)
+
+#### possible solutions: 
+- [deepstream documentation](https://docs.nvidia.com/metropolis/deepstream/dev-guide/text/DS_using_custom_model.html)
+- [person with same error](https://github.com/open-mmlab/mmdeploy/issues/726)
+- [implementation #1](https://github.com/wang-xinyu/tensorrtx/tree/master/yolo11)
+- [C++ inference pipeline for TensorRT](https://github.com/ultralytics/yolov5/issues/7892)
+- [different application but atleast some info](https://github.com/NVIDIA-AI-IOT/deepstream_tao_apps/blob/master/post_processor/Makefile)
+
+
+#### DOCUMENTATION FOR own data parser
+- [NvDsInferParseCustomFunc | NVIDIA deepstream SDK API reference](https://docs.nvidia.com/metropolis/deepstream-nvaie30/sdk-api/nvdsinfer__custom__impl_8h.html#a992d8959bd83b213ecda2b554cf61394)

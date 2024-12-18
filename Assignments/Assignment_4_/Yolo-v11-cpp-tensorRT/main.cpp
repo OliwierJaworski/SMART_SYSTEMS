@@ -14,8 +14,8 @@
 #include <gst/rtsp-server/rtsp-server.h>
 
 
-#define MUXER_OUTPUT_WIDTH 1920
-#define MUXER_OUTPUT_HEIGHT 1080
+#define MUXER_OUTPUT_WIDTH 640
+#define MUXER_OUTPUT_HEIGHT 640
 #define MUXER_BATCH_TIMEOUT_USEC 40000
 
 /**
@@ -158,7 +158,6 @@ int main(int argc, char* argv[]) {
             g_object_set(G_OBJECT (element_data.source), 
                 "location", "rtsp://192.168.0.145:8554/xx", 
                 "timeout", (guint64)30 * GST_SECOND, 
-                "do-timestamp", TRUE, 
                 "latency", 2000, 
                 NULL);
             g_signal_connect(element_data.source, "pad-added", G_CALLBACK(on_pad_added), element_data.depay);
@@ -171,6 +170,7 @@ int main(int argc, char* argv[]) {
 
             g_object_set (G_OBJECT (element_data.streammux), 
                 "batch-size", 1, 
+                "live-source",1,
                 "width", MUXER_OUTPUT_WIDTH, 
                 "height", MUXER_OUTPUT_HEIGHT,
                 "batched-push-timeout", MUXER_BATCH_TIMEOUT_USEC, 
@@ -179,14 +179,16 @@ int main(int argc, char* argv[]) {
             g_object_set (G_OBJECT (element_data.pgie),
                 "config-file-path", "/home/jetsonoli/Desktop/Project_Folder/SMART_SYSTEMS/Assignments/Assignment_4_/Yolo-v11-cpp-tensorRT/config_files/nvinfer_config.txt", 
                 NULL);
-
+            
             g_object_set (G_OBJECT (element_data.tracker),
-                "ll-lib-file", "/opt/nvidia/deepstream/deepstream/lib/libnvds_nvmultiobjecttracker.so", 
+                //"ll-lib-file","/home/jetsonoli/Desktop/Project_Folder/SMART_SYSTEMS/Assignments/Assignment_4_/Yolo-v11-cpp-tensorRT/config_files/nvdsinfer_customparser/nvidia_example/libnvds_infercustomparser.so",
+                //"ll-lib-file", "/opt/nvidia/deepstream/deepstream/lib/libnvds_nvmultiobjecttracker.so", 
+                //"ll-config-file", "/home/jetsonoli/Desktop/Project_Folder/SMART_SYSTEMS/Assignments/Assignment_4_/Yolo-v11-cpp-tensorRT/config_files/tracker_config.txt",
+                "ll-config-file", "/home/jetsonoli/Desktop/Project_Folder/SMART_SYSTEMS/Assignments/Assignment_4_/Yolo-v11-cpp-tensorRT/config_files/nvdsinfer_customparser/my_implementation/custom_yolo_parser.so",
                 NULL);
-
+            
             g_object_set(G_OBJECT(element_data.encoder),
                 "bitrate", 2000000, 
-                "control-rate", 2, 
                 "iframeinterval", 30, 
                 NULL);
 

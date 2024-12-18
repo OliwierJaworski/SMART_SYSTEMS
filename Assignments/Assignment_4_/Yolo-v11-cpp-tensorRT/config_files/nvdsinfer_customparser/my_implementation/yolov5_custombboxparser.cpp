@@ -52,29 +52,82 @@ bool NvDsInferParseCustomBatchedYoloV5NMSTLT (
          NvDsInferParseDetectionParams const &detectionParams,
          std::vector<NvDsInferObjectDetectionInfo> &objectList);
 
+/**
+ * Type definition for the custom bounding box parsing function.
+ *
+ * @param[in]  outputLayersInfo A vector containing information on the output
+ *                              layers of the model.
+ * @param[in]  networkInfo      Network information.
+ * @param[in]  detectionParams  Detection parameters required for parsing
+ *                              objects.
+ * @param[out] objectList       A reference to a vector in which the function
+ *                              is to add parsed objects.
+ */
 extern "C"
 bool NvDsInferParseCustomBatchedYoloV5NMSTLT (
          std::vector<NvDsInferLayerInfo> const &outputLayersInfo,
          NvDsInferNetworkInfo  const &networkInfo,
          NvDsInferParseDetectionParams const &detectionParams,
          std::vector<NvDsInferObjectDetectionInfo> &objectList) {
-            
-    // Startup indicator
+
+    
     std::cout << BOLD_RED 
               << "========== CUSTOM YOLOv5 PARSER FUNCTION STARTED =========="
               << RESET_COLOR << std::endl;
-     if(outputLayersInfo.size() != 4)
+     if(outputLayersInfo.size() != 1)
     {
         std::cerr << "Mismatch in the number of output buffers."
-                  << "Expected 4 output buffers, detected in the network :"
+                  << "Expected 1 output buffer, detected in the network :"
                   << outputLayersInfo.size() << std::endl;
         return false;
     }
+    
+//--------------------
+int centerX = networkInfo.width / 2; // X coordinate of the center
+int centerY = networkInfo.height / 2; // Y coordinate of the center
+int boxWidth = 100; // Width of the bounding box
+int boxHeight = 100; // Height of the bounding box
 
+// Assuming detectionParams and objectList are set up
+float threshold = detectionParams.perClassThreshold[0];
+
+// Assuming a bounding box at the center of the image
+int left = centerX - boxWidth / 2;
+int top = centerY - boxHeight / 2;
+
+// Ensure the bounding box is within image bounds
+left = std::max(0, std::min<int>(left, networkInfo.width - 1));
+top = std::max(0, std::min<int>(top, networkInfo.height - 1));
+int right = std::min<int>(left + boxWidth, networkInfo.width);
+int bottom = std::min<int>(top + boxHeight, networkInfo.height);
+
+// Simulate a classId and confidence score for this bounding box
+int simulatedClassId = 0; // Example classId
+float simulatedConfidence = 0.9f; // Example confidence score
+
+// Display the bounding box info
+std::cout << "Displaying bounding box at the center: " << std::endl;
+std::cout << "Class: " << simulatedClassId << ", Confidence: " << simulatedConfidence << std::endl;
+std::cout << "Bounding Box: (Left: " << left << ", Top: " << top << ", Right: " << right << ", Bottom: " << bottom << ")" << std::endl;
+
+// Assuming you're storing objects in objectList
+NvDsInferObjectDetectionInfo object;
+object.classId = simulatedClassId;
+object.detectionConfidence = simulatedConfidence;
+object.left = left;
+object.top = top;
+object.width = right - left;
+object.height = bottom - top;
+
+// Add this simulated object to the list
+objectList.push_back(object);
+
+//--------------------
     /* Host memory for "BatchedNMS"
        BatchedNMS has 4 output bindings, the order is:
        keepCount, bboxes, scores, classes
     */
+/*
     int* p_keep_count = (int *) outputLayersInfo[0].buffer;
     float* p_bboxes = (float *) outputLayersInfo[1].buffer;
     float* p_scores = (float *) outputLayersInfo[2].buffer;
@@ -117,7 +170,11 @@ bool NvDsInferParseCustomBatchedYoloV5NMSTLT (
         objectList.push_back(object);
     }
     return true;
+    */
+   std::cout << "========== CUSTOM YOLOv11 PARSER FUNCTION COMPLETED ==========" << std::endl;
+   return true;
 }
 
 /* Check that the custom function has been defined correctly */
 CHECK_CUSTOM_PARSE_FUNC_PROTOTYPE(NvDsInferParseCustomBatchedYoloV5NMSTLT);
+ 
