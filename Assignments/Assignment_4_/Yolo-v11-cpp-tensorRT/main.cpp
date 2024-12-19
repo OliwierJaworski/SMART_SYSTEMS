@@ -158,14 +158,22 @@ int main(int argc, char* argv[]) {
             g_object_set(G_OBJECT (element_data.source), 
                 "location", "rtsp://192.168.0.145:8554/xx", 
                 "timeout", (guint64)30 * GST_SECOND, 
-                "latency", 2000, 
+                "latency", 5000, 
                 NULL);
             g_signal_connect(element_data.source, "pad-added", G_CALLBACK(on_pad_added), element_data.depay);
 
             g_object_set(G_OBJECT (element_data.queue), 
                 "max-size-time", 10000000000L, 
                 "max-size-buffers", 4000, 
-                "max-size-bytes", 10000000, 
+                "max-size-bytes", 10000000,
+                NULL);
+
+            g_object_set(G_OBJECT (element_data.decoder), 
+                "skip-frames", 0,
+                //"drop-frame-interval", 5,
+                "disable-dpb", TRUE,
+                "enable-full-frame", TRUE,
+                "enable-max-performance", TRUE,
                 NULL);
 
             g_object_set (G_OBJECT (element_data.streammux), 
@@ -177,19 +185,18 @@ int main(int argc, char* argv[]) {
                 NULL);
 
             g_object_set (G_OBJECT (element_data.pgie),
-                "config-file-path", "/home/jetsonoli/Desktop/Project_Folder/SMART_SYSTEMS/Assignments/Assignment_4_/Yolo-v11-cpp-tensorRT/config_files/nvinfer_config.txt", 
+                "config-file-path", "/opt/nvidia/deepstream/deepstream/sources/apps/sample_apps/deepstream-test1/dstest1_pgie_config.txt", 
                 NULL);
             
             g_object_set (G_OBJECT (element_data.tracker),
-                //"ll-lib-file","/home/jetsonoli/Desktop/Project_Folder/SMART_SYSTEMS/Assignments/Assignment_4_/Yolo-v11-cpp-tensorRT/config_files/nvdsinfer_customparser/nvidia_example/libnvds_infercustomparser.so",
-                //"ll-lib-file", "/opt/nvidia/deepstream/deepstream/lib/libnvds_nvmultiobjecttracker.so", 
-                //"ll-config-file", "/home/jetsonoli/Desktop/Project_Folder/SMART_SYSTEMS/Assignments/Assignment_4_/Yolo-v11-cpp-tensorRT/config_files/tracker_config.txt",
-                "ll-config-file", "/home/jetsonoli/Desktop/Project_Folder/SMART_SYSTEMS/Assignments/Assignment_4_/Yolo-v11-cpp-tensorRT/config_files/nvdsinfer_customparser/my_implementation/custom_yolo_parser.so",
+                "ll-lib-file", "/opt/nvidia/deepstream/deepstream/lib/libnvds_nvmultiobjecttracker.so", 
                 NULL);
             
             g_object_set(G_OBJECT(element_data.encoder),
-                "bitrate", 2000000, 
+                "bitrate", 4000000, 
                 "iframeinterval", 30, 
+                "preset-level", 1,
+                "maxperf-enable", true,
                 NULL);
 
             g_object_set(G_OBJECT(element_data.rtppay), 
@@ -327,6 +334,10 @@ static gboolean on_bus_message(GstBus *bus, GstMessage *message, GMainLoop *loop
 
 static void on_pad_added(GstElement *src, GstPad *new_pad, GstElement *depay) {
     GstPad *sink_pad = gst_element_get_static_pad(depay, "sink");
+    if (!sink_pad) {
+        g_printerr("Failed to get sink pad of depay element. Exiting.\n");
+        return;
+    }
     if (gst_pad_is_linked(sink_pad)) {
         g_object_unref(sink_pad);
         return;

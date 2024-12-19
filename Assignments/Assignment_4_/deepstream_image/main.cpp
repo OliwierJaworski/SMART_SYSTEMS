@@ -1,9 +1,32 @@
+/*
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION. All rights reserved.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
+ */
+
 #include <gst/gst.h>
 #include <glib.h>
 #include <stdio.h>
 #include <string.h>
 #include <cuda_runtime_api.h>
 #include "gst-nvdssr.h"
+#include <iostream>
 
 GST_DEBUG_CATEGORY (NVDS_APP);
 
@@ -67,8 +90,8 @@ gchar pgie_classes_str[4][32] = { "Vehicle", "TwoWheeler", "Person",
 
 static gboolean bbox_enabled = TRUE;
 static gint enc_type = 0; // Default: Hardware encoder
-static gint sink_type = 2; // Default: Eglsink
-static guint sr_mode = 0; // Default: Audio + Video
+static gint sink_type = 1; // Default: Eglsink
+static guint sr_mode = 1; // Default: Audio + Video
 
 GOptionEntry entries[] = {
   {"bbox-enable", 'e', 0, G_OPTION_ARG_INT, &bbox_enabled,
@@ -245,6 +268,7 @@ cb_newpad (GstElement * element, GstPad * element_src_pad, gpointer data)
 int
 main (int argc, char *argv[])
 {
+g_setenv("GST_DEBUG", "*:4", TRUE);
   GstElement *streammux = NULL, *sink = NULL, *pgie = NULL, *source = NULL,
       *nvvidconv = NULL, *nvvidconv2 = NULL, *encoder_post_osd = NULL,
       *queue_pre_sink = NULL, *queue_post_osd = NULL, *parser_post_osd = NULL,
@@ -309,7 +333,7 @@ main (int argc, char *argv[])
   pipeline = gst_pipeline_new ("dstest-sr-pipeline");
 
   source = gst_element_factory_make ("rtspsrc", "rtsp-source");
-  g_object_set (G_OBJECT (source), "location", argv[1], NULL);
+  g_object_set (G_OBJECT (source), "location", "rtsp://192.168.0.145:8554/xx", NULL);
 
 
   depay_pre_decode = gst_element_factory_make ("rtph264depay", "h264-depay");
@@ -481,11 +505,13 @@ main (int argc, char *argv[])
    * User can set additional parameters e.g recorded file path etc.
    * Refer NvDsSRInitParams structure for additional parameters
    */
-  params.containerType = SMART_REC_CONTAINER;
+  params.containerType = static_cast<NvDsSRContainerType>(SMART_REC_CONTAINER);
   params.cacheSize = CACHE_SIZE_SEC;
   params.defaultDuration = SMART_REC_DEFAULT_DURATION;
   params.callback = smart_record_callback;
-  params.fileNamePrefix = bbox_enabled ? "With_BBox" : "Without_BBox";
+  //gchar file_name_prefix[32];
+  //strcpy(file_name_prefix, (bbox_enabled) ? "With_BBox" : "Without_BBox");
+  params.fileNamePrefix = "With_BBox";
 
   if (NvDsSRCreate (&nvdssrCtx, &params) != NVDSSR_STATUS_OK) {
     g_printerr ("Failed to create smart record bin");

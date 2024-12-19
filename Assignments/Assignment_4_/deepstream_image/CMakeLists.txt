@@ -69,6 +69,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     ${GST_APP_LIBRARIES}
     ${GST_VIDEO_LIBRARIES}
     ${GST_RTSP_LIBRARIES}  # Link against RTSP libraries
+    /opt/nvidia/deepstream/deepstream/lib/libnvdsgst_smartrecord.so
 )
 
 # Enable separable compilation for CUDA (optional but recommended)
